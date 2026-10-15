@@ -108,3 +108,13 @@ because git keeps the history.
 - Update the documentation that describes the changed behaviour.
 - Do not weaken, skip or delete a test to make CI pass. If a test is wrong, explain why in the pull request.
 - Fill in the pull request template, including the privacy check.
+
+## Releasing (maintainers)
+
+1. Put the new version in `pyproject.toml`, `src/polony_app/__init__.py` and `frontend/package.json`, add a `## X.Y.Z` section to
+   `CHANGELOG.md`, update `constraints/release-X.Y.Z.txt` ([docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)) and the version in the
+   installer defaults (`install/install.sh`, `install/install.ps1`) and in the README commands.
+2. Merge to `main` and wait for CI and `install-test` to pass.
+3. Actions, workflow `release`, "Run workflow" on `main` with the version. It checks the versions, refuses a commit whose checks are not
+   green, creates the annotated tag, and publishes the release with the installers and `SHA256SUMS.txt`.
+4. Check the release: download the assets and verify `SHA256SUMS.txt`, and run the README install command in a clean environment.

@@ -1,32 +1,66 @@
 name: release
 
-# Pushing a tag vX.Y.Z creates the GitHub Release: notes from CHANGELOG.md, the installers and a SHA256SUMS.txt.
-# The tag must match the version in pyproject.toml, src/polony_app/__init__.py and a CHANGELOG.md heading.
+# Creates the GitHub Release: notes from CHANGELOG.md, the installer scripts and a SHA256SUMS.txt.
+#
+# Two ways to start it:
+#   * push a tag vX.Y.Z;
+#   * run this workflow by hand ("Run workflow", branch main, version X.Y.Z). It creates the annotated tag vX.Y.Z on the
+#     selected commit and then the release. It refuses a commit whose other checks have not all succeeded.
+# In both cases the version must agree in pyproject.toml, src/polony_app/__init__.py and a CHANGELOG.md heading.
 on:
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, for example 0.1.0 (the tag v0.1.0 is created on the selected commit)"
+        required: true
+        type: string
 
 permissions:
   contents: write
+  checks: read
 
 jobs:
   release:
     name: create the release
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', inputs.version) || github.ref_name }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - name: Check that the tag and the versions agree
         run: |
-          ver="${GITHUB_REF_NAME#v}"
+          ver="${TAG#v}"
           py=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -1)
           app=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/polony_app/__init__.py | head -1)
           echo "tag=$ver pyproject=$py app=$app"
           [ "$ver" = "$py" ] && [ "$ver" = "$app" ] || { echo "version mismatch"; exit 1; }
           grep -q "^## $ver " CHANGELOG.md || { echo "CHANGELOG.md has no '## $ver' heading"; exit 1; }
+      - name: Refuse a commit whose checks are not green (manual start only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > checks.json
+          jq -r '.check_runs[] | select(.name != "create the release") | "\(.status) \(.conclusion) \(.name)"' checks.json
+          bad=$(jq '[.check_runs[] | select(.name != "create the release") | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length' checks.json)
+          total=$(jq '[.check_runs[] | select(.name != "create the release")] | length' checks.json)
+          echo "checks: $total, not green: $bad"
+          [ "$total" -gt 0 ] && [ "$bad" = "0" ] || { echo "the commit's checks are not all green"; exit 1; }
+      - name: Create the annotated tag (manual start only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then echo "tag $TAG already exists"; exit 1; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "PoCo / Polony Review ${TAG#v}" -m "Research-stage release. See CHANGELOG.md for the notes and the known limits."
+          git push origin "refs/tags/$TAG"
       - name: Release notes from the changelog
         run: |
-          ver="${GITHUB_REF_NAME#v}"
+          ver="${TAG#v}"
           awk -v v="$ver" '/^## /{ if (found) exit; if (index($0, "## " v " ") == 1) found=1 } found' CHANGELOG.md > release-notes.md
           {
             echo
@@ -42,10 +76,8 @@ jobs:
           cp install/install.sh install/install.ps1 install/uninstall.sh install/uninstall.ps1 release-assets/
           cd release-assets && sha256sum install.sh install.ps1 uninstall.sh uninstall.ps1 > SHA256SUMS.txt && cat SHA256SUMS.txt
       - name: Create the release
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" release-assets/* \
-            --title "PoCo / Polony Review ${GITHUB_REF_NAME#v}" \
+          gh release create "$TAG" release-assets/* \
+            --title "PoCo / Polony Review ${TAG#v}" \
             --notes-file release-notes.md \
             --verify-tag

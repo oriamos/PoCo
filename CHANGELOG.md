@@ -21,8 +21,9 @@ First release under the repository `oriamos/poco`. The history before this relea
   dependency versions tested for this release.
 * CI: a Python 3.10 / 3.11 / 3.13 smoke matrix, an install with the release constraints on 3.12, and a Markdown local-link check
   (`scripts/check_markdown_links.py`).
-* Release workflow (`.github/workflows/release.yml`): a `vX.Y.Z` tag creates the GitHub Release with notes from this file, the installer
-  scripts and `SHA256SUMS.txt`.
+* Release workflow (`.github/workflows/release.yml`): creates the GitHub Release with notes from this file, the installer scripts and
+  `SHA256SUMS.txt`, either when a `vX.Y.Z` tag is pushed or when started by hand with a version (it then creates the annotated tag, and
+  refuses a commit whose other checks are not all green).
 * Dependabot (`.github/dependabot.yml`) for pip, npm (minor and patch only) and GitHub Actions; `NOTICE` lists the licences of the Python dependencies read from package metadata.
 * The installers print the installed version and where it came from, and their usage comments show the release-tag command.
 * The demo test also opens the slide in place, generates a grid, detects and saves, and asserts the three output files.
