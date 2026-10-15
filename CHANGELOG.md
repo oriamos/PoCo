@@ -48,6 +48,9 @@ First release under the repository `oriamos/poco`. The history before this relea
   caught by the check.
 
 * GitHub Actions use `actions/checkout`, `setup-python` and `setup-node` v7 (the CI showed a Node.js 20 deprecation warning for v4).
+* The detection pipeline (`src/polony_app/detection/pipeline.py`) did not compile on Python 3.10 and 3.11: one f-string nested the same
+  quote character, which needs Python 3.12. The Big-FISH engine therefore could not be imported on those versions even though
+  `pyproject.toml` and the installers accept 3.10-3.13. Found by the new Python smoke matrix; the message text is unchanged.
 * The Windows installer check hung until the 40-minute job timeout, so every earlier `install-test` run ended as "cancelled", not
   as pass or fail. Cause: `check_windows.ps1` started the launcher with `Start-Process -Wait`, which also waits for the server the
   launcher leaves running in the background. The check now waits for the launcher process only, and the Windows launch, relaunch and

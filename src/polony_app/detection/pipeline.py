@@ -312,9 +312,10 @@ def run_detection(red: np.ndarray, green: np.ndarray, regions: list[Region], req
                 s_.x += ox
                 s_.y += oy
             thr = info.get("threshold")
+            auto_thr = info.get("auto_threshold")   # (a separate name: same-quote nesting inside an f-string needs Python 3.12)
             notes.append(f"{name}: {len(sp)} spot(s); LoG threshold "
                          f"{'n/a' if thr is None else f'{thr:.4g}'} noise units"
-                         f"{'' if info.get('auto_threshold') is None else f' (auto {info['auto_threshold']:.4g} x scale {params.threshold_scale:g})'}"
+                         f"{'' if auto_thr is None else f' (auto {auto_thr:.4g} x scale {params.threshold_scale:g})'}"
                          f"; tiles {info.get('n_tiles', 1)}")
             notes += [f"{name}: {n}" for n in info.get("notes", [])]
             if params.background.method == "none":
