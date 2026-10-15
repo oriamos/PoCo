@@ -10,10 +10,15 @@
 
 *The screenshot shows the synthetic demo slide from `resources/dataset_files/test/`, not laboratory data.*
 
+A **polony** is a small fluorescent spot made by amplifying a single DNA molecule on a slide. Each slide is scanned in two colours (two
+channels). A spot seen only in the red channel is counted **red**, only in the green channel **green**, and a spot at the same place in both
+channels **yellow**. The counts per counting field are the result the researcher needs.
+
 ## Who it is for
 
 Researchers who count polonies (solid-phase single-molecule PCR spots) on fluorescence scans of counting fields, and who want a
-reproducible, reviewable count instead of manual tallies alone. The application runs on your own computer; nothing is uploaded.
+reproducible, reviewable count instead of manual tallies alone. The application runs on your own computer and uploads nothing, unless you
+choose to connect the optional shared database described in [docs/app/SHARED_DATABASE.md](docs/app/SHARED_DATABASE.md).
 
 ## The workflow
 
@@ -35,12 +40,23 @@ make app-install   # creates .venv and installs the Python dependencies (first r
 make demo          # copies the synthetic slide to ./demo-data/input and starts the app on ./demo-data/app
 ```
 
-Then follow [TRY_DEMO.md](TRY_DEMO.md): open `demo-data/input/test_img.tif`, map the channels, detect, review and export.
-Expected output files and the reset command are listed there. `make demo-reset` deletes the demo folder only.
+The app is then served at **http://127.0.0.1:8000** (open it in your browser). Follow [TRY_DEMO.md](TRY_DEMO.md): open
+`demo-data/input/test_img.tif`, map the channels (red = channel 0, green = channel 1), generate the grid, detect, review and save.
+The first part (install, start, open the slide, run detection) takes a few minutes; reviewing the objects takes as long as you spend on it.
+Expected output files and the reset command are listed in TRY_DEMO.md. `make demo-reset` deletes the demo folder only.
+
+**Windows without `make`:** use the installer below, or run these commands in PowerShell from the cloned folder, then open the slide from
+`demo-data\input`:
+
+```powershell
+python -m venv .venv; .venv\Scripts\pip install -r requirements-app.txt
+New-Item -ItemType Directory -Force demo-data\input | Out-Null; Copy-Item resources\dataset_files\test\test_img.tif demo-data\input\
+$env:PYTHONPATH='src'; .venv\Scripts\python -m polony_app --data-dir demo-data\app --port 8000
+```
 
 ## Install (one command, no administrator rights)
 
-Stable release **v0.1.0**. The installers download this tagged release, not the moving `main` branch.
+Release **v0.1.0** (research software, see the status below). The installers download this tagged release, not the moving `main` branch.
 
 **Windows** (PowerShell):
 ```powershell
@@ -82,12 +98,26 @@ with the `install.ps1` line of `SHA256SUMS.txt`, read the script, then run `powe
   person decides.
 * **Human review remains required.** Nothing is counted as final until a person approves the counting fields.
 * **Training does not run automatically.** Model training only happens when you run the training command yourself.
-* **Promotion does not change the default model.** Promoting a model in the registry does not make it the detector used by the React
-  application. See [docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md) for what is and is not connected.
+* **The fine-tuned model is not what the app uses.** A fine-tuned Spotiflow model exists as a saved candidate. Marking it as the chosen model
+  ("promotion" in the model registry) does not change the detector in the application, which still uses the standard pretrained model.
+  See [docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md) for what is and is not connected.
 
-Results so far are in [docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md). In short: an exploratory evaluation on eight slides with
-one annotator, and a larger fine-tuning run on saved historical data that improved agreement with the saved researcher marks on a held-out
-test split. Neither is a general accuracy claim.
+Results so far are in [docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md). In short:
+
+* An **exploratory evaluation on eight real slides with one annotator**. It varies a lot from slide to slide and is not validation.
+* A **fine-tuning run on saved historical data** (test split: 1,980 crops from 97 groups). Agreement with the saved researcher marks, at a
+  10-pixel tolerance, each model at its own threshold:
+
+  | | Pretrained | Fine-tuned candidate |
+  |---|---:|---:|
+  | Precision | 64.89% | 75.14% |
+  | Recall | 73.95% | 91.36% |
+  | F1 | 69.13% | 82.46% |
+  | Count error per field (MAE) | 3.282 | 2.014 |
+  | Count bias per field | +1.243 | +1.921 |
+
+  These numbers measure **agreement with saved marks, not accuracy** on new images. The candidate also over-counts more. The original
+  test images and the checkpoint are not in this repository, so they cannot be re-run from here.
 
 ## Status and limitations
 
@@ -137,7 +167,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full checklist and the rules for 
   [kirill-push/polony-counting](https://github.com/kirill-push/polony-counting) (MIT); no code was copied. See [NOTICE](NOTICE).
 * **Background:** polony is a solid-phase single-molecule PCR method (Mitra & Church, 1999), adapted at the Lindell lab, Technion, to
   quantify marine viruses of a given clade in field samples.
-* **Citation:** see [CITATION.cff](CITATION.cff). A preprint or paper citation will be added when one exists. <!-- TODO: add when published -->
+* **Citation:** see [CITATION.cff](CITATION.cff). A preprint or paper citation will be added when one exists.
 
 ## Feedback
 
