@@ -1,16 +1,26 @@
+# Weekly dependency updates. Major-version jumps of the Python and npm packages are ignored on purpose: they change the build
+# tools or the numerical libraries and need a deliberate migration (see CONTRIBUTING.md), not an automatic pull request.
+# Security updates are not affected by these ignore rules.
 version: 2
 updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: "/frontend"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 3

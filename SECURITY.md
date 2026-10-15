@@ -59,5 +59,6 @@ sensitive, and some of it contains secrets:
 - The Python dependencies in `requirements-app.txt` have minimum versions only (`>=`). `constraints/release-0.1.0.txt` records the exact versions tested for the release (see
   [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)); it is not used by the installers. The optional AI packages are pinned exactly (`spotiflow==0.6.5`, `torch==2.14.1`, `torchvision==0.29.1`).
 - The frontend uses `frontend/package-lock.json` with exact versions.
-- Dependabot is configured (`.github/dependabot.yml`) for the Python, npm and GitHub Actions dependencies, weekly. Updates arrive as pull requests and
-  must pass CI before they are merged.
+- Dependabot is configured (`.github/dependabot.yml`) for the Python, npm and GitHub Actions dependencies, weekly. Minor and patch updates arrive as pull requests and
+  must pass CI before they are merged. Major-version jumps of the Python and npm packages are ignored by the automatic updates (they need a
+  deliberate migration); security updates are not affected.
