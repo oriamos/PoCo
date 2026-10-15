@@ -1,0 +1,83 @@
+PoCo / Polony Review
+Version 0.1.0
+Copyright (c) 2026 Ori Amos
+
+This product is licensed under the MIT License. See the file LICENSE.
+
+Project origin
+--------------
+
+Polony Review was written by Ori Amos. It counts red, green and yellow polonies on two-channel microscope
+TIFF scans, with a researcher reviewing each counting field. The method was adapted at the Lindell lab,
+Technion. See README.md and AUTHORS.md.
+
+Upstream attribution
+--------------------
+
+The file-format conventions for the historical ImageJ-annotated TIFFs were learned from
+https://github.com/kirill-push/polony-counting (MIT licence). No code was copied from that project.
+Every parser in src/polony_app/legacy_import is new code. See src/polony_app/legacy_import/ATTRIBUTION.md.
+
+Third-party components
+----------------------
+
+The components below are used by this project. Each one is a separate project with its own licence. The
+licence texts are in the upstream projects. Where a licence is listed here, it was read from the project's
+lock file.
+
+1. Python runtime and test dependencies (requirements-app.txt)
+
+   requirements-app.txt sets minimum versions (>=). It is not a lock file, so the installed version is the
+   newest compatible release at install time. The licences of these packages are in their upstream projects.
+
+   fastapi >= 0.110
+   uvicorn >= 0.29
+   python-multipart >= 0.0.9
+   pydantic >= 2.5
+   numpy >= 1.26
+   scipy >= 1.11
+   scikit-image >= 0.22
+   tifffile >= 2023.8.12
+   imagecodecs >= 2023.1.23
+   roifile >= 2023.5.12
+   Pillow >= 10.1
+   big-fish >= 0.6.2
+   psycopg[binary] >= 3.2
+   psycopg_pool >= 3.2
+   pywebview >= 5
+   httpx >= 0.27 (tests)
+   pytest >= 7.4 (tests)
+   openpyxl >= 3.1
+
+   TODO (Ori): check the licence of each package above from its installed metadata and add it here.
+
+2. Optional AI detector (install/extra-ai-requirements.txt and install/ai_extra.py)
+
+   spotiflow 0.6.5 (exact version, optional)
+   torch 2.14.1 (exact version, optional, PyTorch)
+   torchvision 0.29.1 (exact version, optional, PyTorch)
+
+   These are installed only when the AI detector is requested. The licences are in the upstream projects.
+
+3. Frontend (frontend/package-lock.json, exact versions)
+
+   Runtime (included in the built web interface):
+   react 18.3.1 (MIT)
+   react-dom 18.3.1 (MIT)
+   zustand 4.5.7 (MIT)
+
+   Build and test tools (not included in the built web interface):
+   vite 5.4.21 (MIT)
+   vitest 2.1.9 (MIT)
+   typescript 5.9.3 (Apache-2.0)
+   @vitejs/plugin-react 4.7.0 (MIT)
+   @types/react 18.3.31 (MIT)
+   @types/react-dom 18.3.7 (MIT)
+   playwright-core 1.64.0 (Apache-2.0, used by the end-to-end tests)
+
+Big-FISH and Spotiflow
+----------------------
+
+Big-FISH (classical spot detection) and Spotiflow (AI spot detection, optional) are separate projects by
+their own authors. This project uses them as dependencies. Using them here does not mean that their authors
+endorse PoCo / Polony Review.
