@@ -29,4 +29,9 @@ See [ATTRIBUTION.md](src/polony_app/legacy_import/ATTRIBUTION.md) and [NOTICE](N
 
 ## Contributors
 
-Contributors are recorded in the git history of the repository.
+The git history of this repository starts with a single import of the earlier work, followed by commits made in assisted
+sessions. The commit author names in this repository therefore do **not** show who wrote the code. Authorship is as stated in
+this file and in [NOTICE](NOTICE). The earlier history stays in the original repository,
+[oriamos/polony-counting](https://github.com/oriamos/polony-counting), which is kept for reference.
+
+Future contributors are recorded in the git history and in the pull requests of this repository.
