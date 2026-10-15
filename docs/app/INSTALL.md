@@ -8,16 +8,22 @@ Nothing is uploaded anywhere. The installer puts a **Polony Review** icon on you
 **Windows** (open *PowerShell*: Start menu, type `powershell`, Enter):
 
 ```powershell
-irm https://raw.githubusercontent.com/oriamos/poco/main/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/oriamos/poco/v0.1.0/install/install.ps1 | iex
 ```
 
 **macOS** (open *Terminal*: Cmd+Space, type `terminal`, Enter) **and Linux**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oriamos/poco/main/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.1.0/install/install.sh | bash
 ```
 
-Alternative if you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout main`):
+These commands install the stable release **v0.1.0** (a tagged version), not the moving `main` branch. To check the installer before you run
+it, download it and verify its SHA-256 value against the `SHA256SUMS.txt` of the release (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
+
+**Development version (unstable, for testing only):** set `POLONY_REF=main` (Windows: `$env:POLONY_REF='main'`) before running the command,
+or pass `-Ref main` to `install.ps1`. Any tag or branch name works the same way.
+
+Alternative if you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.1.0`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File install\install.ps1       # Windows

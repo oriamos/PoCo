@@ -7,7 +7,7 @@
 #   --dry-run        print what would be done, change nothing
 #   --no-launch      do not start the app at the end
 #   --with-ai        also install the optional AI detector (Spotiflow + PyTorch, 0.8-2.5 GB); --without-ai never asks
-#   --ref NAME       git branch/tag to install (default: main)
+#   --ref NAME       git tag or branch to install (default: v0.1.0, the stable release; main is the unstable development branch)
 #   --python PATH    use this Python (3.10-3.13) instead of searching / downloading one
 # Environment: POLONY_HOME (default ~/PolonyReview), POLONY_DATA_DIR (default ~/PolonyReviewData),
 #   POLONY_SOURCE (local checkout to copy instead of downloading from GitHub), POLONY_REPO, POLONY_REF,
