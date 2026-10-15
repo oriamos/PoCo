@@ -1208,7 +1208,7 @@ async function handle(req, res) {
         reason: store.sfAvailable ? null : 'the spotiflow package is not installed (pip install spotiflow)',
         version: store.sfAvailable ? '0.3.1-mock' : null,
         device: { cuda: false, mps: false, cpu: true },
-        models: SF_MODELS.map((n) => ({ name: n, cached: store.sfCached.has(n), version: '1.0', checksum: store.sfCached.has(n) ? 'c0ffee12'.repeat(8) : null })),
+        models: [{ name: 'active', cached: true, version: null, checksum: null, registry: 'default', label: 'no promoted model: pretrained general' }, ...SF_MODELS.map((n) => ({ name: n, cached: store.sfCached.has(n), version: '1.0', checksum: store.sfCached.has(n) ? 'c0ffee12'.repeat(8) : null }))],
       },
     ]);
   if (route === '/__mock/spotiflow' && m === 'POST') {

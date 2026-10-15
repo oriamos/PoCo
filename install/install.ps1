@@ -1,6 +1,6 @@
 # Polony Review installer for Windows (PowerShell 5.1 and 7+). No administrator rights needed.
 #
-#   irm https://raw.githubusercontent.com/oriamos/poco/v0.1.0/install/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/oriamos/poco/v0.2.0/install/install.ps1 | iex
 #
 # Re-running it updates the installation. Options when run from a saved file:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 [-DryRun] [-NoLaunch] [-WithAi|-WithoutAi] [-Ref NAME] [-Python PATH]
@@ -23,7 +23,7 @@ function Install-PolonyReview {
     # ---- options ---------------------------------------------------------------------------------
     $repo = if ($env:POLONY_REPO) { $env:POLONY_REPO } else { 'oriamos/poco' }
     # the stable release by default; POLONY_REF=main installs the unstable development branch
-    $ref = if ($env:POLONY_REF) { $env:POLONY_REF } else { 'v0.1.0' }
+    $ref = if ($env:POLONY_REF) { $env:POLONY_REF } else { 'v0.2.0' }
     $dry = ($env:POLONY_DRYRUN -and $env:POLONY_DRYRUN -ne '0')
     $ci = ($env:POLONY_CI -and $env:POLONY_CI -ne '0')
     $noLaunch = $false
@@ -130,7 +130,7 @@ function Install-PolonyReview {
                 if ($c2 -eq 0) { $done = $true } else { Warn 'git clone failed; downloading the zip archive instead'; if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp } }
             }
             if (-not $done) {
-                # a release tag (v0.1.0, ...) is downloaded from refs/tags, anything else from a branch (main, ...)
+                # a release tag (v0.2.0, ...) is downloaded from refs/tags, anything else from a branch (main, ...)
                 $kind = if ($ref -match '^v[0-9]') { 'tags' } else { 'heads' }
                 $url = "https://github.com/$repo/archive/refs/$kind/$ref.zip"
                 $zip = Join-Path $ph 'app.zip'

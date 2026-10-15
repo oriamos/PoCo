@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { DetectionRequest, EngineChoice, EngineInfo, SpotiflowParams } from '../api/types';
+import type { DetectionRequest, EngineChoice, EngineInfo, EngineModelInfo, SpotiflowParams } from '../api/types';
 import { DEFAULT_SPOTIFLOW } from '../api/types';
 import { runLabel, shortChecksum } from '../lib/consensus';
 import { useApp } from '../state/store';
@@ -13,7 +13,7 @@ const CHOICES: { id: EngineChoice; label: string }[] = [
   { id: 'hybrid', label: 'Both – compare' },
 ];
 
-const FALLBACK_MODELS = ['general'];
+const FALLBACK_MODELS = ['active'];
 
 /** 'Detection engine' selector + Spotiflow model preparation + consensus tolerance. */
 export function EngineSection({ req, set, disabled }: { req: DetectionRequest; set: (r: DetectionRequest) => void; disabled: boolean }) {
@@ -31,7 +31,7 @@ export function EngineSection({ req, set, disabled }: { req: DetectionRequest; s
   const choice = req.engine ?? 'bigfish';
   const spot = req.spotiflow ?? DEFAULT_SPOTIFLOW;
   const needsSf = choice !== 'bigfish';
-  const models = sf?.models?.length ? sf.models : FALLBACK_MODELS.map((name) => ({ name, cached: false, version: null, checksum: null }));
+  const models = sf?.models?.length ? sf.models : FALLBACK_MODELS.map((name): EngineModelInfo => ({ name, cached: false, version: null, checksum: null }));
   const cur = models.find((m) => m.name === spot.model_name);
   const preparing = isJobActive(prepareJob?.status);
   const gpu = sf?.device?.cuda ? 'CUDA GPU' : sf?.device?.mps ? 'Apple GPU (MPS)' : null;
@@ -76,8 +76,8 @@ export function EngineSection({ req, set, disabled }: { req: DetectionRequest; s
               {!models.some((m) => m.name === spot.model_name) && <option value={spot.model_name}>{spot.model_name}</option>}
               {models.map((m) => (
                 <option key={m.name} value={m.name}>
-                  {m.name}
-                  {m.cached ? ` (ready${m.version ? `, v${m.version}` : ''})` : sf ? ' (not downloaded)' : ''}
+                  {m.label ?? m.name}
+                  {m.registry ? '' : m.cached ? ` (ready${m.version ? `, v${m.version}` : ''})` : sf ? ' (not downloaded)' : ''}
                 </option>
               ))}
             </select>
@@ -92,6 +92,13 @@ export function EngineSection({ req, set, disabled }: { req: DetectionRequest; s
               {preparing ? 'Preparing…' : cur?.cached ? 'Re-check model' : 'Prepare model'}
             </button>
           </label>
+          {cur?.registry && (
+            <div className="muted small" data-testid="spotiflow-registry-note">
+              {cur.registry === 'default'
+                ? 'Default: the promoted model of the model registry, or the pretrained model when none is promoted.'
+                : 'Fine-tuned model: it runs with the downscale and normaliser it was trained with, whatever is set below.'}
+            </div>
+          )}
           <div className="match" data-testid="spotiflow-downscale-box">
             <span>Image downscale</span>
             <select

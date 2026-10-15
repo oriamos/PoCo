@@ -104,7 +104,7 @@ export interface SpotiflowParams {
 }
 
 export const DEFAULT_SPOTIFLOW: SpotiflowParams = {
-  model_name: 'general',
+  model_name: 'active',
   prob_thresh: null,
   min_distance: 1,
   exclude_border: false,
@@ -226,6 +226,10 @@ export interface EngineModelInfo {
   cached: boolean;
   version: string | null;
   checksum: string | null;
+  /** text for the picker (the promoted model, a registry candidate) */
+  label?: string | null;
+  /** 'default' for the promoted-model entry, else the registry status of a fine-tuned model; absent for official pretrained models */
+  registry?: string | null;
 }
 
 export interface EngineInfo {

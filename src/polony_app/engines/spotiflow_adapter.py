@@ -412,8 +412,9 @@ def _refine_peaks(pts: np.ndarray, heatmap) -> tuple[np.ndarray, int]:
 class SpotiflowEngine:
     name = EngineName.spotiflow
 
-    def __init__(self, cache_dir: Optional[Path] = None):
+    def __init__(self, cache_dir: Optional[Path] = None, data_dir: Optional[Path] = None):
         self._cache_dir = Path(cache_dir) if cache_dir else None
+        self._data_dir = Path(data_dir) if data_dir else None   # the app's data folder: holds the model registry
 
     @property
     def cache_dir(self) -> Path:
@@ -446,6 +447,15 @@ class SpotiflowEngine:
                     progress: Progress = lambda f, m: None, cancelled: Callable[[], bool] = lambda: False,
                     point_validity: Optional[PointValidity] = None, run_id: Optional[str] = None) -> EngineResult:
         params = dict(params or {})
+        # "active" / a registry id -> the promoted or named fine-tuned model (see ml/app_model.py); official names pass through
+        from ..ml.app_model import ACTIVE, ModelResolutionError, resolve_for_detection
+        load_from: Optional[str] = None
+        registry_notes: list[str] = []
+        if self._data_dir is not None or str(params.get("model_name") or ACTIVE) == ACTIVE:
+            try:
+                params, load_from, registry_notes = resolve_for_detection(params, self._data_dir)
+            except ModelResolutionError as exc:
+                raise EngineError(str(exc)) from exc
         extras = {"crop_to_valid": bool(params.pop("crop_to_valid", True)),
                   "crop_pad_px": int(params.pop("crop_pad_px", CROP_PAD_PX)),
                   "refine_peaks": bool(params.pop("refine_peaks", True))}
@@ -480,10 +490,12 @@ class SpotiflowEngine:
         if cancelled():
             raise DetectionCancelled()
 
-        ok, why = self.available(sp.model_name)
+        ok, why = self.available(load_from or sp.model_name)
         if not ok:
             raise EngineUnavailable(why)
-        mi = ensure_model(sp.model_name, self.cache_dir, lambda f, m: progress(0.1 * f, m))
+        mi = ensure_model(load_from or sp.model_name, self.cache_dir, lambda f, m: progress(0.1 * f, m))
+        rec_name = sp.model_name if load_from else mi.name     # a registry model is recorded by its registry id
+        notes.extend(registry_notes)
         device, dnote = resolve_device(sp.device)
         if dnote:
             notes.append(dnote)
@@ -494,7 +506,7 @@ class SpotiflowEngine:
             if not valid_mask.any():
                 run = EngineRunInfo(
                     run_id=run_id, analysis_id=analysis_id, image_sha256=dict(image_sha256 or {}),
-                    engine=EngineName.spotiflow, engine_version=self.version(), model_name=mi.name,
+                    engine=EngineName.spotiflow, engine_version=self.version(), model_name=rec_name,
                     model_version=mi.version, model_checksum=mi.checksum_sha256, page=int(page),
                     channel_role=channel_role, params=sp.model_dump(mode="json"), preprocessing={},
                     started_at=started, finished_at=utcnow_iso(), device=device, duration_s=0.0, status="skipped",
@@ -650,7 +662,7 @@ class SpotiflowEngine:
                "page_to_channel": ("confirmed mapping" if channel_role else "unconfirmed (no colour assigned)")}
         run = EngineRunInfo(
             run_id=run_id, analysis_id=analysis_id, image_sha256=dict(image_sha256 or {}),
-            engine=EngineName.spotiflow, engine_version=self.version(), model_name=mi.name,
+            engine=EngineName.spotiflow, engine_version=self.version(), model_name=rec_name,
             model_version=mi.version, model_checksum=mi.checksum_sha256, page=int(page),
             channel_role=channel_role, params=rp, preprocessing=pre, started_at=started, finished_at=utcnow_iso(),
             device=used_device, duration_s=time.perf_counter() - t0, status="ok", n_raw=len(dets),

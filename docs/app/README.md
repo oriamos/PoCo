@@ -2,7 +2,7 @@
 
 A local, human-in-the-loop app (own desktop window, or a browser tab) for reviewing and counting red / green / yellow polonies on two-channel TIFF scans. A classical spot detector (Big-FISH, Laplacian of Gaussian)
 proposes positions, you inspect, correct and approve them per region, and the app exports counts together with full provenance. Code: `src/polony_app` (FastAPI + SQLite) and `frontend/` (React + TypeScript).
-The base install does **not** need torch; the optional Spotiflow engine does (`--with-ai`).
+The base install does **not** need torch; the optional Spotiflow engine does (`--with-ai`). Spotiflow detection uses the promoted model of the model registry by default, else the pretrained `general` model.
 
 > **Status / honesty note.** Run end to end on 8 real two-channel slides and compared with the researcher's marks, as an exploratory evaluation with one annotator ([ALL_SLIDES_EVAL.md](ALL_SLIDES_EVAL.md), [REAL_DATA_VALIDATION.md](REAL_DATA_VALIDATION.md)); this is not general validation (see [../STATUS_AND_RESULTS.md](../STATUS_AND_RESULTS.md)). Accuracy is partial and varies by slide; defaults and review cut-offs are working values, not final. Everything still open: [ROADMAP.md](ROADMAP.md).
 

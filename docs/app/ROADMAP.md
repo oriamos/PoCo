@@ -16,6 +16,9 @@ accuracy; measured results are in [ALL_SLIDES_EVAL.md](ALL_SLIDES_EVAL.md) and [
   extra with automatic MPS → CPU fallback on Apple Silicon.
 * Dataset snapshots from reviewed slides, controlled fine-tuning with a locked test set, model registry; a fine-tuned
   model is shipped in `artifacts/`.
+* App detection uses the model registry: the Spotiflow model setting defaults to `active` (the promoted model, or the
+  pretrained `general` model when none is promoted); a registry candidate can be chosen by id; a fine-tuned model runs
+  with its own training downscale, normaliser and saved threshold.
 
 ## Known gaps (software)
 

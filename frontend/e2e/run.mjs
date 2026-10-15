@@ -890,7 +890,7 @@ async function engineSuite() {
   check('no Spotiflow fields while Big-FISH only', (await tid('spotiflow-model').count()) === 0 && (await tid('consensus-tol').count()) === 0);
   await tid('engine-hybrid').click();
   await tid('spotiflow-model').waitFor();
-  check('hybrid shows model select + consensus tolerance', (await tid('consensus-tol').inputValue()) === '4' && (await tid('spotiflow-model').inputValue()) === 'general');
+  check('hybrid shows model select + consensus tolerance', (await tid('consensus-tol').inputValue()) === '4' && (await tid('spotiflow-model').inputValue()) === 'active');
   check('consensus tolerance help text', /paired one-to-one/.test(await tid('engine-section').innerText()));
   check('downscale defaults to ÷1 with the exploratory note', (await tid('spotiflow-downscale').inputValue()) === '1' && /precision 0\.73 and recall 0\.77/.test(await tid('spotiflow-downscale-note').innerText()));
   await tid('spotiflow-preset-large').click();

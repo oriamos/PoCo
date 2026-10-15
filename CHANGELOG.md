@@ -3,7 +3,19 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
-## Unreleased
+## 0.2.0 — the application uses the promoted model (2026-10-15)
+
+### Changed
+
+* **App detection uses the fine-tuned model.** The Spotiflow model setting now defaults to `active`: the promoted model of the model
+  registry, or the pretrained `general` model when none is promoted (no change without a promoted model). After `promote`, normal
+  detection uses it. A registry candidate can also be chosen by id. The model picker lists the promoted model, the pretrained models
+  and the registry candidates. A fine-tuned model runs with the downscale and normaliser it was trained with and its own saved
+  threshold; the run record names it by registry id and keeps the weights checksum. A model whose weights are missing or modified is
+  refused with a clear message. The weights themselves are still not part of the repository.
+* The guides were rewritten shorter: a short explanation and the terminal commands. `docs/app/TRAINING_GUIDE.md` starts with a
+  "Quick path". No commands, numbers or caveats were removed.
+* Installers, README and `docs/app/INSTALL.md` install `v0.2.0` by default; `constraints/release-0.2.0.txt`.
 
 ### Fixed
 

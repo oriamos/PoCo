@@ -138,7 +138,7 @@ class ConsensusStatus(str, Enum):
 
 
 class SpotiflowParams(BaseModel):
-    model_name: str = "general"                 # official pretrained name or a registered fine-tuned model id
+    model_name: str = "active"                  # "active" = the promoted registry model (the pretrained "general" when none), an official pretrained name, or a registry id
     prob_thresh: Optional[float] = None         # None = the model's own optimised threshold (recorded)
     min_distance: int = 1
     exclude_border: bool = False

@@ -1,5 +1,5 @@
 PoCo / Polony Review
-Version 0.1.0
+Version 0.2.0
 Copyright (c) 2026 Ori Amos
 
 This product is licensed under the MIT License. See the file LICENSE.
@@ -49,8 +49,8 @@ lock file.
    pytest >= 7.4 (tests)
    openpyxl >= 3.1
 
-   Licences below were read from the package metadata installed for the 0.1.0 release tests (Python 3.13, see
-   constraints/release-0.1.0.txt). Metadata can be imprecise; the licence texts are in the upstream projects.
+   Licences below were read from the package metadata installed for the 0.2.0 release tests (Python 3.13, see
+   constraints/release-0.2.0.txt). Metadata can be imprecise; the licence texts are in the upstream projects.
 
    fastapi 0.143.2: MIT
    uvicorn 0.54.0: BSD-3-Clause

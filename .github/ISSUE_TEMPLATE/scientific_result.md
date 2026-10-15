@@ -29,7 +29,7 @@ Describe the count, detection, or claim that you think is incorrect or surprisin
 
 ## Settings
 
-- App version (see `pyproject.toml`, currently 0.1.0):
+- App version (see `pyproject.toml`, currently 0.2.0):
 - Detector (Big-FISH, Spotiflow `general`, or a named model):
 - Parameters changed from the defaults (list them):
 - Downscale and normaliser, if known:

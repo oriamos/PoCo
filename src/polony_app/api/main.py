@@ -233,7 +233,7 @@ def _sig(a: Analysis, st: AnalysisState) -> str:
     return hashlib.sha256(json.dumps(d, sort_keys=True, default=str).encode()).hexdigest()
 
 
-def _detector_kwargs(fn, aid: str, a: Analysis) -> dict:
+def _detector_kwargs(fn, aid: str, a: Analysis, data_dir=None) -> dict:
     """Optional context the (two-engine) pipeline accepts; passed only if its signature takes it, so an
     older/simpler run_detection keeps working."""
     import inspect
@@ -243,7 +243,7 @@ def _detector_kwargs(fn, aid: str, a: Analysis) -> dict:
     except (TypeError, ValueError):
         return {}
     accepts_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
-    want = {"analysis_id": aid, "image_sha256": dict(a.image.sha256) if a.image else {}}
+    want = {"analysis_id": aid, "image_sha256": dict(a.image.sha256) if a.image else {}, "data_dir": data_dir}
     # Engine runs are recorded against the channel index of each role (= the TIFF page of a 2-page stack) and the
     # role is passed ONLY from the user-confirmed mapping (never inferred from page order).
     if a.image is not None:
@@ -1058,7 +1058,7 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             try:
                 from polony_app.detection import pipeline as _pl
 
-                extra_kw = _detector_kwargs(_pl.run_detection, aid, st.analysis)
+                extra_kw = _detector_kwargs(_pl.run_detection, aid, st.analysis, data_dir)
             except Exception:  # noqa: BLE001  (the job itself reports an import problem)
                 extra_kw = {}
             try:
@@ -1084,7 +1084,7 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             align = (int(st.analysis.alignment_dy), int(st.analysis.alignment_dx))
             from polony_app.detection import pipeline as _plp
 
-            extra_kw = _detector_kwargs(_plp.run_detection, aid, st.analysis)
+            extra_kw = _detector_kwargs(_plp.run_detection, aid, st.analysis, data_dir)
         from polony_app.detection import pipeline
 
         res = pipeline.run_detection(red, green, regions, body, lambda f, m="": None,
@@ -1122,8 +1122,7 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
 
         return home_dir() / "models" / "spotiflow"
 
-    @api.get("/engines")
-    def get_engines():
+    def _engines_report():
         try:
             bf = metadata.version("big-fish")
         except metadata.PackageNotFoundError:
@@ -1175,12 +1174,44 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
         out.append(sp)
         return out
 
+    @api.get("/engines")
+    def get_engines():
+        out = _engines_report()
+        sp = next((e for e in out if e["name"] == "spotiflow"), None)
+        if sp is not None:
+            sp["models"] = _with_registry_models(list(sp.get("models") or []))
+        return out
+
+    def _with_registry_models(models: list) -> list:
+        """The model list of the picker: the promoted model first, then the pretrained models, then the registry candidates."""
+        from polony_app.ml.registry import DEFAULT_PRETRAINED, Registry
+
+        try:
+            reg = Registry(data_dir).load()
+        except Exception:  # noqa: BLE001  an unreadable registry must not break the engine list
+            reg = {"active": None, "models": {}}
+        active = reg.get("active")
+        head = {"name": "active", "cached": True, "registry": "default",
+                "label": f"promoted model ({active})" if active else f"no promoted model: pretrained {DEFAULT_PRETRAINED}"}
+        extra = [{"name": mid, "cached": True, "registry": e.get("status") or "registered", "label": f"{mid} ({e.get('status') or 'registered'})"}
+                 for mid, e in sorted(reg.get("models", {}).items()) if e.get("kind") != "pretrained"]
+        return [head] + [m for m in models if m.get("name") != "active"] + extra
+
     def _prepare_model(name: str, progress) -> str:
         """Download/load one Spotiflow model (no-op when cached). Used by POST /engines/spotiflow/prepare and
         once before the first slide of a batch run that uses Spotiflow."""
         ad, why = _spotiflow_adapter()
         if ad is None or not hasattr(ad, "ensure_model"):
             raise ReviewError("engine_unavailable", f"Spotiflow is not available in this installation ({why})", 409)
+        from polony_app.ml.app_model import ModelResolutionError, resolve_for_detection
+
+        try:
+            resolved, load_from, _notes = resolve_for_detection({"model_name": name}, data_dir)
+        except ModelResolutionError as exc:
+            raise ReviewError("model_unavailable", str(exc), 409)
+        if load_from:
+            return f"model '{resolved['model_name']}' is a registry model: nothing to download"
+        name = resolved["model_name"]
         cache = ad.model_cache_dir() if hasattr(ad, "model_cache_dir") else _model_dir()
         info = ad.ensure_model(name, cache, progress)
         cached = getattr(info, "cached", None)

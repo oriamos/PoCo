@@ -236,7 +236,7 @@ def test_engines_listing_and_prepare(client, monkeypatch):
     monkeypatch.setitem(sys.modules, "polony_app.engines.spotiflow_adapter", ad)
     monkeypatch.setattr(pkg, "spotiflow_adapter", ad, raising=False)
     sp = client.get("/api/engines").json()[1]
-    assert sp["available"] is True and sp["version"] == "9.9" and sp["models"][0]["name"] == "general"
+    assert sp["available"] is True and sp["version"] == "9.9" and sp["models"][0]["name"] == "active" and "general" in [m["name"] for m in sp["models"]]
     r = client.post("/api/engines/spotiflow/prepare", json={"model_name": "general"})
     assert r.status_code == 200
     j = wait_job(client, r.json()["id"])

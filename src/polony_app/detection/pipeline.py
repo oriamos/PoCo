@@ -143,7 +143,7 @@ def run_detection(red: np.ndarray, green: np.ndarray, regions: list[Region], req
                   alignment: tuple[int, int] = (0, 0),
                   analysis_id: str = "", pages: tuple[int, int] = (0, 1),
                   roles: tuple[Optional[str], Optional[str]] = ("red", "green"),
-                  image_sha256: Optional[dict] = None, spotiflow_engine=None) -> DetectionResult:
+                  image_sha256: Optional[dict] = None, spotiflow_engine=None, data_dir=None) -> DetectionResult:
     """Detect spots in both channels and associate them.
 
     ``red``/``green`` are raw original-dtype 2-D arrays in the same (registered)
@@ -333,7 +333,7 @@ def run_detection(red: np.ndarray, green: np.ndarray, regions: list[Region], req
         sf_res = None
         if run_sf:
             if sf_eng is None:
-                sf_eng = spotiflow_engine if spotiflow_engine is not None else SpotiflowEngine()
+                sf_eng = spotiflow_engine if spotiflow_engine is not None else SpotiflowEngine(data_dir=data_dir)
             sf_params = request.spotiflow.model_dump(mode="json")
             sf_valid = valid_c
             if win is not None:
