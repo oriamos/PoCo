@@ -24,6 +24,7 @@ First release under the repository `oriamos/poco`. The history before this relea
 * Release workflow (`.github/workflows/release.yml`): a `vX.Y.Z` tag creates the GitHub Release with notes from this file, the installer
   scripts and `SHA256SUMS.txt`.
 * Dependabot (`.github/dependabot.yml`) for pip, npm (minor and patch only) and GitHub Actions; `NOTICE` lists the licences of the Python dependencies read from package metadata.
+* The installers print the installed version and where it came from, and their usage comments show the release-tag command.
 * The demo test also opens the slide in place, generates a grid, detects and saves, and asserts the three output files.
 * Installers install the tagged release `v0.1.0` by default; `POLONY_REF=main` selects the development branch. Tags are downloaded
   from `refs/tags`. The installers do not check SHA-256 checksums yet (planned; see [SECURITY.md](SECURITY.md)).

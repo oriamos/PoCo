@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Polony Review installer for macOS and Linux. No admin rights, never uses sudo.
 #
-#   curl -fsSL https://raw.githubusercontent.com/oriamos/poco/main/install/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.1.0/install/install.sh | bash
 #
 # Re-running it updates the installation. Options (after `bash -s --` when piped):
 #   --dry-run        print what would be done, change nothing
@@ -377,6 +377,10 @@ DESKTOP
 
   # ---------------------------------------------------------------- 6. done
   step 8 "Done"
+  if [ "$DRY" = 0 ]; then
+    instver=$(PYTHONPATH="$APP/src" "$VPY" -c 'import polony_app; print(polony_app.__version__)' 2>/dev/null || true)
+    say "  Installed PoCo / Polony Review ${instver:-(version unknown)} from ${POLONY_SOURCE:-$REPO at $REF}"
+  fi
   say "  Start it from the 'Polony Review' icon on your Desktop (first start takes up to a minute)."
   say "  Stop it:    $BINDIR/polony-review stop"
   say "  Shared database (optional): $BINDIR/polony-review set-database | clear-database"

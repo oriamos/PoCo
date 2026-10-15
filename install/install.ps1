@@ -1,6 +1,6 @@
 # Polony Review installer for Windows (PowerShell 5.1 and 7+). No administrator rights needed.
 #
-#   irm https://raw.githubusercontent.com/oriamos/poco/main/install/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/oriamos/poco/v0.1.0/install/install.ps1 | iex
 #
 # Re-running it updates the installation. Options when run from a saved file:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 [-DryRun] [-NoLaunch] [-WithAi|-WithoutAi] [-Ref NAME] [-Python PATH]
@@ -364,6 +364,13 @@ function Install-PolonyReview {
 
     Write-Host ''
     Say 'Done.'
+    if (-not $dry) {
+        $instVer = ''
+        try { $instVer = (& $vpy -c "import sys; sys.path.insert(0, r'$app\src'); import polony_app; print(polony_app.__version__)" 2>$null | Select-Object -First 1) } catch { }
+        if (-not $instVer) { $instVer = '(version unknown)' }
+        $instSrc = if ($env:POLONY_SOURCE) { $env:POLONY_SOURCE } else { "$repo at $ref" }
+        Say "  Installed PoCo / Polony Review $instVer from $instSrc"
+    }
     Say "  Start it from the 'Polony Review' icon on your Desktop (first start takes up to a minute)."
     Say "  Stop it:    Start Menu > Polony Review > Stop Polony Review"
     Say '  Update:     run the same install command again.'
