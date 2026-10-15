@@ -45,7 +45,7 @@ jobs:
     env:
       POLONY_FORCE_UV: ${{ matrix.python == 'uv' && '1' || '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Static checks of the scripts
         run: |
           bash -n install/install.sh install/uninstall.sh install/ci/check_unix.sh
@@ -85,7 +85,7 @@ jobs:
     env:
       POLONY_FORCE_UV: ${{ matrix.python == 'uv' && '1' || '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Parse-check the PowerShell scripts and dry-run
         shell: powershell
         run: |

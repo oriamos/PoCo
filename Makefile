@@ -44,7 +44,7 @@ DEMO_DIR ?= ./demo-data
 demo: ## copy the synthetic demo slide into ./demo-data/input and run the app on that folder (see TRY_DEMO.md)
 	@test -x "$$(command -v $(APP_PY))" || { echo "$(APP_PY) not found: run 'make app-install' first"; exit 1; }
 	@mkdir -p $(DEMO_DIR)/input && cp resources/dataset_files/test/test_img.tif $(DEMO_DIR)/input/test_img.tif
-	@echo "Demo slide: $(DEMO_DIR)/input/test_img.tif  (synthetic; open it in the app with 'Drop TIFF')"
+	@echo "Demo slide: $(abspath $(DEMO_DIR))/input/test_img.tif  (synthetic; in the app use 'Open from disk...' with this path, see TRY_DEMO.md)"
 	@APP_PY=$(APP_PY) POLONY_DATA_DIR=$(DEMO_DIR)/app PORT=$(PORT) ./scripts/run_app.sh
 
 .PHONY: demo-reset

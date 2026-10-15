@@ -47,6 +47,7 @@ First release under the repository `oriamos/poco`. The history before this relea
   tolerance). The check now anchors the zoom on whole pixels and allows one readout unit (0.1 px). A deliberately broken zoom is
   caught by the check.
 
+* GitHub Actions use `actions/checkout`, `setup-python` and `setup-node` v7 (the CI showed a Node.js 20 deprecation warning for v4).
 * The Windows installer check hung until the 40-minute job timeout, so every earlier `install-test` run ended as "cancelled", not
   as pass or fail. Cause: `check_windows.ps1` started the launcher with `Start-Process -Wait`, which also waits for the server the
   launcher leaves running in the background. The check now waits for the launcher process only, and the Windows launch, relaunch and
