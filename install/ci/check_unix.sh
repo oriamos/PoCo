@@ -77,7 +77,13 @@ open-bundle)  # macOS only: LaunchServices must accept and run the bundle
   ;;
 uninstall)
   bash "$PH/app/install/uninstall.sh"
-  [ ! -e "$PH" ] || bad "install folder still there"
+  # The uninstaller keeps the downloaded AI models (documented in docs/app/INSTALL.md), so with the AI extra the install folder may
+  # remain, but it must then hold nothing except models/. Without the AI extra the folder must be gone.
+  if [ -e "$PH" ]; then
+    left=$(ls -A "$PH" | tr '\n' ' ')
+    [ -n "${POLONY_WITH_AI:-}" ] && [ "$left" = "models " ] || bad "install folder still there: $left"
+    echo "OK: the install folder holds only the kept AI models"
+  fi
   [ ! -e "$HOME/Desktop/Polony Review.app" ] && [ ! -e "$HOME/Desktop/Polony Review.desktop" ] || bad "desktop icon still there"
   [ -d "${POLONY_DATA_DIR:-$HOME/PolonyReviewData}" ] || bad "user data was deleted"
   ok "uninstalled, data kept"

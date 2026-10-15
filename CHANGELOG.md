@@ -3,6 +3,14 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
+## Unreleased
+
+### Fixed
+
+* The `install-test` uninstall check failed whenever the optional AI extra had been installed: the uninstaller keeps the downloaded
+  AI models by design, so `~/PolonyReview/models` remained and the check expected the whole folder to be gone. The check now accepts a
+  remaining folder only if it holds nothing but `models` and the AI extra was installed. No installer behaviour changed.
+
 ## 0.1.0 — first public release (research stage)
 
 First release under the repository `oriamos/poco`. The history before this release was re-based into a clean initial commit; see

@@ -83,7 +83,13 @@ switch ($Mode) {
         $un = Join-Path $ph 'app\install\uninstall.ps1'
         & powershell -NoProfile -ExecutionPolicy Bypass -File $un
         if ($LASTEXITCODE -ne 0) { Bad 'uninstall failed' }
-        if (Test-Path $ph) { Bad 'install folder still there' }
+        # The uninstaller keeps the downloaded AI models (docs/app/INSTALL.md): with the AI extra the folder may remain, but it must
+        # then hold nothing except models. Without the AI extra the folder must be gone.
+        if (Test-Path $ph) {
+            $left = @(Get-ChildItem $ph -Force | ForEach-Object { $_.Name })
+            if (-not $env:POLONY_WITH_AI -or ($left -join ',') -ne 'models') { Bad "install folder still there: $($left -join ', ')" }
+            Ok 'the install folder holds only the kept AI models'
+        }
         if (Test-Path (Join-Path $desktop 'Polony Review.lnk')) { Bad 'desktop shortcut still there' }
         if (Test-Path $startMenu) { Bad 'start menu folder still there' }
         $docs = [Environment]::GetFolderPath('MyDocuments')
