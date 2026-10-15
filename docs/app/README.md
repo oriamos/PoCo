@@ -4,7 +4,7 @@ A local, human-in-the-loop app (own desktop window, or a browser tab) for review
 proposes positions, you inspect, correct and approve them per region, and the app exports counts together with full provenance. Code: `src/polony_app` (FastAPI + SQLite) and `frontend/` (React + TypeScript).
 The base install does **not** need torch; the optional Spotiflow engine does (`--with-ai`).
 
-> **Status / honesty note.** Validated end-to-end on 8 real two-channel slides against the researcher's marks ([ALL_SLIDES_EVAL.md](ALL_SLIDES_EVAL.md), [REAL_DATA_VALIDATION.md](REAL_DATA_VALIDATION.md)). Accuracy is partial and varies by slide; defaults and review cut-offs are working values, not final. Everything still open: [ROADMAP.md](ROADMAP.md).
+> **Status / honesty note.** Run end to end on 8 real two-channel slides and compared with the researcher's marks, as an exploratory evaluation with one annotator ([ALL_SLIDES_EVAL.md](ALL_SLIDES_EVAL.md), [REAL_DATA_VALIDATION.md](REAL_DATA_VALIDATION.md)); this is not general validation (see [../STATUS_AND_RESULTS.md](../STATUS_AND_RESULTS.md)). Accuracy is partial and varies by slide; defaults and review cut-offs are working values, not final. Everything still open: [ROADMAP.md](ROADMAP.md).
 
 ## Quick start (one command)
 

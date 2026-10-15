@@ -53,17 +53,21 @@ curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.1.0/install/install
 ```
 
 The installer puts the app in your user folder (about 650 MB; it downloads Python 3.12 only when no Python 3.10–3.13 is present) and
-adds a **PoCo / Polony Review** icon to your desktop. Run the same command again to update. Your data folder is kept on update and uninstall.
+adds a **PoCo / Polony Review** icon to your desktop. Run the same command again to update. Uninstalling keeps your data folder.
 
-**Safer alternative** (recommended if you do not want to pipe a script into a shell): download the script, verify it against the
-`SHA256SUMS.txt` attached to the [v0.1.0 release](https://github.com/oriamos/poco/releases/tag/v0.1.0), read it, then run it.
+**Safer alternative** (recommended if you do not want to pipe a script into a shell): download the script and the release's
+`SHA256SUMS.txt`, verify the checksum, read the script, then run it.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/oriamos/poco/v0.1.0/install/install.sh
-shasum -a 256 install.sh      # Linux: sha256sum install.sh; compare with SHA256SUMS.txt
+base=https://github.com/oriamos/poco/releases/download/v0.1.0
+curl -fsSLO $base/install.sh && curl -fsSLO $base/SHA256SUMS.txt
+grep ' install.sh$' SHA256SUMS.txt | sha256sum -c -     # macOS: ... | shasum -a 256 -c -    (must print: install.sh: OK)
 less install.sh
 bash install.sh
 ```
+
+On Windows, download `install.ps1` and `SHA256SUMS.txt` from the same release page, compare `(Get-FileHash install.ps1 -Algorithm SHA256).Hash`
+with the `install.ps1` line of `SHA256SUMS.txt`, read the script, then run `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`.
 
 * **AI detector (Spotiflow + PyTorch, about 0.8–2.5 GB extra):** add `--with-ai` (`-WithAi` on Windows). On Apple Silicon it uses the GPU
   when available. Intel Macs: Big-FISH only.
@@ -77,7 +81,7 @@ bash install.sh
 * **Agreement between two detectors is not ground truth.** Where they agree, the count is more likely to be right; where they do not, a
   person decides.
 * **Human review remains required.** Nothing is counted as final until a person approves the counting fields.
-* **Training does not run automatically.** Model training is a deliberate command that you run and read.
+* **Training does not run automatically.** Model training only happens when you run the training command yourself.
 * **Promotion does not change the default model.** Promoting a model in the registry does not make it the detector used by the React
   application. See [docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md) for what is and is not connected.
 
@@ -109,6 +113,7 @@ test split. Neither is a general accuracy claim.
 | Model information | [MODEL_CARD.md](MODEL_CARD.md), [artifacts/README.md](artifacts/README.md) |
 | Call the API | [docs/app/EXPERIMENTS_API.md](docs/app/EXPERIMENTS_API.md), and the live docs at `/docs` while the app runs |
 | See what is planned | [docs/app/ROADMAP.md](docs/app/ROADMAP.md), [docs/app/SCIENTIFIC_OPEN_QUESTIONS.md](docs/app/SCIENTIFIC_OPEN_QUESTIONS.md) |
+| Reproducibility (what can and cannot be rerun) | [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) |
 | Release notes | [CHANGELOG.md](CHANGELOG.md) |
 | Contribute | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
 | Everything | [docs/app/README.md](docs/app/README.md) |

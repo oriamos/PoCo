@@ -25,6 +25,7 @@ Details: [app/ALL_SLIDES_EVAL.md](app/ALL_SLIDES_EVAL.md) and [app/EVALUATION.md
   threshold (F1 changed by −0.03 to +0.02). See [app/FINE_TUNING.md](app/FINE_TUNING.md).
 * The Spotiflow columns in the all-slides table are marked as superseded in that document; use its per-threshold tables.
 * These are exploratory results. They are not general validation.
+* Numbers quoted for `test_img` in older documents belong to an earlier real laboratory image that is no longer distributed. The `test_img.tif` in this repository is a synthetic stand-in, so they cannot be reproduced with it.
 
 ## B. The larger saved historical-data training run
 
@@ -84,4 +85,4 @@ Limits of this result:
 
 ## Reproducibility
 
-Which results can be reproduced from this repository is described in [MODEL_CARD.md](../MODEL_CARD.md#reproduction-limitations).
+Which results can be reproduced from this repository, and which cannot, is described in [REPRODUCIBILITY.md](REPRODUCIBILITY.md) and [MODEL_CARD.md](../MODEL_CARD.md#reproduction-limitations).

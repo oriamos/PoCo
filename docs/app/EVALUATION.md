@@ -1,5 +1,7 @@
 # Evaluation of detection configurations
 
+> **About `test_img`.** Numbers in this document that are quoted for `test_img` come from an earlier real laboratory image that is no longer distributed. The `test_img.tif` in this repository is a synthetic stand-in (see `resources/dataset_files/test/make_test_img.py`), so those numbers cannot be reproduced with it. See [../STATUS_AND_RESULTS.md](../STATUS_AND_RESULTS.md) and [../REPRODUCIBILITY.md](../REPRODUCIBILITY.md).
+
 `python -m polony_app.ml evaluate --predictions <analysis ids> --reference analysis|roi [--tolerance 10] [--out report.md]` writes a Markdown report and a JSON file next to it.
 Model checkpoints are scored on the locked test crops with `eval-model` (see [FINE_TUNING.md](FINE_TUNING.md)).
 Nothing here says what is true: the reference is either the **final human-reviewed points** (`analysis`, fully reviewed regions only) or the **researcher's reference marks**

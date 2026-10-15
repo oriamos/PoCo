@@ -15,6 +15,15 @@ function Launcher([string[]]$a) {
     $ErrorActionPreference = $old
     return @{ Code = $c; Out = $o.Trim() }
 }
+# Start the launcher the way the shortcut does and wait for THAT process only. `Start-Process -Wait` also waits for the
+# process's descendants (Windows PowerShell 5.1 and PowerShell 7 both document this), and the launcher leaves the server
+# running in the background, so -Wait never returned and the CI step hung until the job timeout (shown as "cancelled").
+function Start-Launcher([string]$file, [string]$arguments, [string]$dir) {
+    $a = @{ FilePath = $file; ArgumentList = $arguments; WindowStyle = 'Hidden'; PassThru = $true }
+    if ($dir) { $a.WorkingDirectory = $dir }
+    $p = Start-Process @a
+    if (-not $p.WaitForExit(120000)) { Bad "the launcher did not exit within 120 s ($file $arguments)" }
+}
 function Read-Lnk($path) {
     $s = (New-Object -ComObject WScript.Shell).CreateShortcut($path)
     return @{ Target = $s.TargetPath; Args = $s.Arguments; Icon = $s.IconLocation; Dir = $s.WorkingDirectory }
@@ -43,7 +52,7 @@ switch ($Mode) {
     'run' {
         # start exactly what the Desktop shortcut starts: pythonw.exe -m polony_app.launcher (no console window)
         $s = Read-Lnk (Join-Path $desktop 'Polony Review.lnk')
-        Start-Process -FilePath $s.Target -ArgumentList $s.Args -WorkingDirectory $s.Dir -WindowStyle Hidden -Wait
+        Start-Launcher $s.Target $s.Args $s.Dir
         $url = $null
         for ($i = 0; $i -lt 60 -and -not $url; $i++) {
             $r = Launcher @('status')
@@ -55,7 +64,7 @@ switch ($Mode) {
         $page = Invoke-WebRequest -UseBasicParsing $url
         if ($page.Content -notmatch '<div id="root">') { Bad 'UI not served at /' }
         Ok "launched: $url (health + UI)"
-        [void](Start-Process -FilePath $vpyw -ArgumentList '-m polony_app.launcher' -WindowStyle Hidden -Wait)   # second launch reuses
+        Start-Launcher $vpyw '-m polony_app.launcher' $null   # second launch reuses
         $r = Launcher @('status'); if ($r.Out -notmatch [regex]::Escape($url)) { Bad "second launch changed the server: $($r.Out)" }
         $r = Launcher @('stop'); Write-Host $r.Out
         Start-Sleep -Seconds 2

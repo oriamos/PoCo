@@ -47,7 +47,8 @@ processed views and detection are not available. See [USER_GUIDE section 2](docs
 
 Create the counting grid and choose which fields to count, following
 [USER_GUIDE section 3](docs/app/USER_GUIDE.md#3-regions-and-exclusions). Try **Randomise** once, then set the grid back if you want
-the fixed layout. The seed shown with the grid reproduces that layout.
+the fixed layout. The seed shown with the grid reproduces that layout. The lab template numbers fields 1 to 24, so choose a grid of at
+most 24 fields (the demo slide's own grid is 4 columns; use 6 rows).
 
 ## 5. Detect
 
@@ -72,8 +73,8 @@ For the opened file, the outputs are written in `demo-data/input/`:
 | `test_img.csv` | per-field counts for the slide |
 | `experiment_counts.csv` | the running table of saved slides in that folder |
 
-These names are produced by [`src/polony_app/export/slide_save.py`](src/polony_app/export/slide_save.py). The automated
-tests cover the save code with fixtures; the demo file has not yet been saved as part of an automated check.
+These names are produced by [`src/polony_app/export/slide_save.py`](src/polony_app/export/slide_save.py) and checked by the
+automated demo test (see the last section).
 
 ## What to expect
 
@@ -93,4 +94,6 @@ make demo          # start again
 ## Automated check of this path
 
 `tests/app/test_demo_smoke.py` checks that the demo file is the documented synthetic example, imports it through the API, maps
-the channels, runs real Big-FISH detection, reads counts and downloads the export bundle. It runs with the backend tests (`make app-test`).
+the channels, runs real Big-FISH detection, reads counts and downloads the export bundle. A second test opens the file in place,
+generates a 4 x 6 grid, detects, saves, and asserts that `test_img_labeled.tif`, `test_img.csv` and `experiment_counts.csv` appear next to
+the scan. They run with the backend tests (`make app-test`) and in CI.

@@ -103,6 +103,7 @@ jobs:
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File install\ci\check_windows.ps1 -Mode shortcuts
       - name: Launch via the Desktop shortcut target, health, UI, stop
+        timeout-minutes: 10
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File install\ci\check_windows.ps1 -Mode run
       - name: AI detector (only when with_ai is ticked)
@@ -113,9 +114,11 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File install\install.ps1
       - name: Launch again (after update)
+        timeout-minutes: 10
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File install\ci\check_windows.ps1 -Mode run
       - name: Uninstall (keeps data)
+        timeout-minutes: 10
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File install\ci\check_windows.ps1 -Mode uninstall
       - name: Logs

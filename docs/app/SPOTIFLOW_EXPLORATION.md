@@ -1,5 +1,7 @@
 # Spotiflow exploration on real data (NOT validated; one annotator)
 
+> **About `test_img`.** Numbers in this document that are quoted for `test_img` come from an earlier real laboratory image that is no longer distributed. The `test_img.tif` in this repository is a synthetic stand-in (see `resources/dataset_files/test/make_test_img.py`), so those numbers cannot be reproduced with it. See [../STATUS_AND_RESULTS.md](../STATUS_AND_RESULTS.md) and [../REPRODUCIBILITY.md](../REPRODUCIBILITY.md).
+
 ## Spotiflow ÷4 on 8 slides: `valid_unsaturated` normalisation, threshold curves
 
 These are the current Spotiflow numbers. Earlier runs used Spotiflow's saturation-sensitive `auto` normalisation (p1/p99.8 of the cropped, zoomed valid bounding box, which still contains saturated and rim pixels; p99.8 was the dtype maximum on 5 of 7 slides), which made its sensitivity an uncontrolled per-slide variable; see "History" at the end.

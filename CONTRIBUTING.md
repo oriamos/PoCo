@@ -65,8 +65,8 @@ change.
 ## Documentation rules
 
 - Keep new text short and in plain English. Do not use marketing language.
-- Check that the relative links in every changed Markdown file point to files that exist. No automated link check is
-  configured yet, so this check is manual.
+- Check that the relative links and anchors in every changed Markdown file resolve: `python scripts/check_markdown_links.py .`
+  (CI runs the same check).
 - Do not write test counts into documentation. They go out of date. Describe the command instead.
 - Do not add internal process notes, session logs, or agent instructions to public files.
 - Put the scientific limits of a result next to the result.

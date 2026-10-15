@@ -48,3 +48,31 @@ def test_demo_path_import_map_detect_export(tmp_path):
         assert sum(counts[k] for k in ("red_only", "green_only", "yellow", "uncertain")) > 0
         z = c.get(f"/api/analyses/{aid}/export", params={"kind": "bundle"})
         assert z.status_code == 200 and z.content[:2] == b"PK"
+
+
+def test_demo_grid_detect_and_save_writes_the_documented_files(tmp_path):
+    """TRY_DEMO.md steps 2-7: open in place, map, generate the grid of the demo slide, detect, Save next to the scan."""
+    import shutil
+
+    scan_dir = tmp_path / "input"
+    scan_dir.mkdir()
+    scan = scan_dir / "test_img.tif"
+    shutil.copyfile(DEMO, scan)
+    grid = json.loads(TRUTH.read_text())["grid"]
+    with TestClient(create_app(tmp_path / "demo-data" / "app")) as c:
+        r = c.post("/api/analyses/open-path", json={"path": str(scan)})
+        assert r.status_code == 200, r.text
+        aid = r.json()["id"]
+        c.put(f"/api/analyses/{aid}/channels", json={"mapping": [{"index": 0, "role": "red"}, {"index": 1, "role": "green"}]})
+        # the lab template has fields 1..24, so the 4 x 7 grid of the slide is used as 4 columns x 6 rows
+        spec = {"rows": 24 // grid["n_cols"], "cols": grid["n_cols"], "cell_w": grid["spacing"], "cell_h": grid["spacing"],
+                "origin_x": grid["xs"][0], "origin_y": grid["ys"][0]}
+        g = c.put(f"/api/analyses/{aid}/grid", json={"grid": spec})
+        assert g.status_code == 200, g.text
+        j = wait_job(c, c.post(f"/api/analyses/{aid}/detect", json=DETECT).json()["id"], 300)
+        assert j["status"] == "done", j
+        s = c.post(f"/api/analyses/{aid}/save-slide", json={"selections": [{"classes": ["red", "green", "yellow"]}]})
+        assert s.status_code == 200, s.text
+    assert (scan_dir / "test_img_labeled.tif").is_file()
+    assert (scan_dir / "test_img.csv").is_file()
+    assert (scan_dir / "experiment_counts.csv").is_file()

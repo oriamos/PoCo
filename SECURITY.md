@@ -46,17 +46,18 @@ sensitive, and some of it contains secrets:
 - The installers (`install/install.sh`, `install/install.ps1`) download code and tools over HTTPS from `github.com`,
   `pypi.org`, `download.pytorch.org` (AI detector only), and `astral.sh` (only if no suitable Python is installed).
 - The installers run without administrator rights. They install into your user folder and do not use `sudo`.
-- The installers **do not currently check SHA-256 hashes** of the files they download.
-- Recommended: check out a tagged version of the repository, read the installer, and compare its SHA-256 hash with
-  a value you trust before you run it. Running `curl ... | bash` runs code from the internet without a chance to read
-  it first. Avoid that form for a version you have not reviewed.
-- TODO (Ori): publish SHA-256 values for each versioned installer, and add a hash check to the installers.
+- By default the installers install the tagged release (`v0.1.0` for this version), not the moving `main` branch. `POLONY_REF=main`
+  installs the unstable development branch.
+- Each GitHub Release attaches the installer scripts and a `SHA256SUMS.txt`. The README shows how to download the script, verify its
+  SHA-256 value, read it, and then run it. Running `curl ... | bash` runs code from the internet without a chance to read it
+  first; use the verified path for a version you have not reviewed.
+- The installers do **not** verify the hash of the application archive or of the Python packages they download. Package downloads
+  use HTTPS and PyPI's own integrity checks. Planned: verifying the application archive against the release's checksum.
 
 ## Dependencies and updates
 
-- The Python dependencies in `requirements-app.txt` have minimum versions only (`>=`). There is no Python lock file
-  yet. The optional AI packages are pinned exactly (`spotiflow==0.6.5`, `torch==2.14.1`, `torchvision==0.29.1`).
+- The Python dependencies in `requirements-app.txt` have minimum versions only (`>=`). `constraints/release-0.1.0.txt` records the exact versions tested for the release (see
+  [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md)); it is not used by the installers. The optional AI packages are pinned exactly (`spotiflow==0.6.5`, `torch==2.14.1`, `torchvision==0.29.1`).
 - The frontend uses `frontend/package-lock.json` with exact versions.
-- Dependabot is **not configured** for this repository yet.
-- TODO (Ori): configure Dependabot (or an equivalent) for the Python and npm dependencies, and decide whether to add
-  a Python lock file.
+- Dependabot is configured (`.github/dependabot.yml`) for the Python, npm and GitHub Actions dependencies, weekly. Updates arrive as pull requests and
+  must pass CI before they are merged.

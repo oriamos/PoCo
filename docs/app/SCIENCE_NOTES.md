@@ -1,5 +1,7 @@
 # Science notes (polony counting)
 
+> **About `test_img`.** Numbers in this document that are quoted for `test_img` come from an earlier real laboratory image that is no longer distributed. The `test_img.tif` in this repository is a synthetic stand-in (see `resources/dataset_files/test/make_test_img.py`), so those numbers cannot be reproduced with it. See [../STATUS_AND_RESULTS.md](../STATUS_AND_RESULTS.md) and [../REPRODUCIBILITY.md](../REPRODUCIBILITY.md).
+
 Scope: the Big-FISH API as installed, experiments on the first real image
 (`resources/dataset_files/test/test_img.tif`), recommended defaults, a review of the red/green/yellow logic,
 and open questions for the researcher. Experiments can be re-run with
@@ -7,8 +9,8 @@ and open questions for the researcher. Experiments can be re-run with
 
 **Status:** all sections complete (2026-10-10). The experiments in §2-§5 were done on ONE real image
 (`test_img.tif`) scored against the researcher's own embedded manual marks; see
-"What is and is not validated" in §3 for that single-image state. Validation was later extended to 8 real
-slides, scored against the researcher's embedded marks: see [REAL_DATA_VALIDATION.md](REAL_DATA_VALIDATION.md)
+"What is and is not validated" in §3 for that single-image state. The evaluation was later extended to 8 real
+slides (exploratory, one annotator), scored against the researcher's embedded marks: see [REAL_DATA_VALIDATION.md](REAL_DATA_VALIDATION.md)
 (file facts, channel identity, per-field agreement) and [ALL_SLIDES_EVAL.md](ALL_SLIDES_EVAL.md) (engine comparison).
 
 > **About the test image.** The experiments in this file were run on a real red-only scanner image that is no longer

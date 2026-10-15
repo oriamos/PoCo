@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 type: software
 title: "PoCo / Polony Review"
 version: 0.1.0
-# TODO: add date-released when v0.1.0 is tagged
+date-released: 2026-10-15
 repository-code: "https://github.com/oriamos/poco"
 license: MIT
 authors:

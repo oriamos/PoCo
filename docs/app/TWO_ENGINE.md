@@ -1,5 +1,7 @@
 # Two-engine detection: Big-FISH + Spotiflow
 
+> **About `test_img`.** Numbers in this document that are quoted for `test_img` come from an earlier real laboratory image that is no longer distributed. The `test_img.tif` in this repository is a synthetic stand-in (see `resources/dataset_files/test/make_test_img.py`), so those numbers cannot be reproduced with it. See [../STATUS_AND_RESULTS.md](../STATUS_AND_RESULTS.md) and [../REPRODUCIBILITY.md](../REPRODUCIBILITY.md).
+
 Status of the design: see [TWO_ENGINE_CONTRACT.md](TWO_ENGINE_CONTRACT.md). This file documents the engine and
 matching layers (`src/polony_app/engines/`, `consensus/`, `detection/pipeline.py`, `detection/two_engine.py`).
 Other layers (review queue, export, dataset / fine-tuning) are described by their owners further down this file

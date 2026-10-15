@@ -43,3 +43,48 @@ jobs:
       - run: npm run build
       - run: npx playwright-core install --with-deps chromium
       - run: CHROMIUM_PATH="$(node -e "console.log(require('playwright-core').chromium.executablePath())")" npm run e2e
+
+  # Supported Python versions (pyproject: >=3.10; the installers accept 3.10-3.13). The full suite runs on 3.12 above; this
+  # lighter job runs the install plus the demo, API-flow, grid and ingest tests on the other versions.
+  compat:
+    name: python ${{ matrix.python }} (smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: pip install -r requirements-app.txt
+      - run: PYTHONPATH=src python -m pytest tests/app/test_demo_smoke.py tests/app/test_api_flow.py tests/app/test_grid.py tests/app/test_imaging_ingest.py -q
+
+  # The release constraints (constraints/release-0.1.0.txt) must stay installable and must pass the same smoke tests.
+  constraints:
+    name: release constraints (3.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-app.txt -c constraints/release-0.1.0.txt
+      - run: PYTHONPATH=src python -m pytest tests/app/test_demo_smoke.py tests/app/test_api_flow.py tests/app/test_grid.py tests/app/test_imaging_ingest.py -q
+
+  # Markdown: every relative link and anchor must resolve (no external network access).
+  docs:
+    name: docs (local links)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/check_markdown_links.py .

@@ -1,5 +1,7 @@
 # Real-data validation (researcher TIFFs, T7 AB assay, slides 29-09-2026)
 
+> **About `test_img`.** Numbers in this document that are quoted for `test_img` come from an earlier real laboratory image that is no longer distributed. The `test_img.tif` in this repository is a synthetic stand-in (see `resources/dataset_files/test/make_test_img.py`), so those numbers cannot be reproduced with it. See [../STATUS_AND_RESULTS.md](../STATUS_AND_RESULTS.md) and [../REPRODUCIBILITY.md](../REPRODUCIBILITY.md).
+
 Status: complete (stages 1-5, 2026-10-10). Inputs are the researcher's 8 raw two-page slides
 (`resources/research_tiffs/`, git-excluded, never committed) plus 7 RGB composites (GenePix exports of 7 of
 these slides), and

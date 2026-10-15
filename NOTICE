@@ -49,7 +49,27 @@ lock file.
    pytest >= 7.4 (tests)
    openpyxl >= 3.1
 
-   TODO (Ori): check the licence of each package above from its installed metadata and add it here.
+   Licences below were read from the package metadata installed for the 0.1.0 release tests (Python 3.13, see
+   constraints/release-0.1.0.txt). Metadata can be imprecise; the licence texts are in the upstream projects.
+
+   fastapi 0.143.2: MIT
+   uvicorn 0.54.0: BSD-3-Clause
+   python-multipart 0.0.32: Apache-2.0
+   pydantic 2.14.1: MIT
+   numpy 2.5.4: BSD-3-Clause (the metadata also lists licences of bundled components; see numpy's LICENSE.txt)
+   scipy 1.18.1: BSD License
+   scikit-image 0.26.0: BSD-3-Clause (the metadata field holds a licence-file listing; BSD-3-Clause per the upstream project)
+   tifffile 2026.9.20: BSD-3-Clause
+   imagecodecs 2026.10.10: BSD-3-Clause
+   roifile 2026.9.22: BSD-3-Clause
+   Pillow 12.3.0: MIT-CMU
+   big-fish 0.6.2: BSD 3-Clause License
+   psycopg 3.3.6: LGPL-3.0-only (installed as a separate package, not modified or bundled here)
+   psycopg_pool 3.3.3: LGPL-3.0-only (installed as a separate package, not modified or bundled here)
+   pywebview 6.2.1: BSD 3-Clause License
+   httpx 0.28.1: BSD-3-Clause
+   pytest 9.1.1: MIT
+   openpyxl 3.1.5: MIT
 
 2. Optional AI detector (install/extra-ai-requirements.txt and install/ai_extra.py)
 

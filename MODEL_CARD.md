@@ -103,10 +103,19 @@ The registry records `best.pt` as the registered weights. `last.pt` is the final
 
 ## Licence and redistribution status
 
-TODO (Ori): state the licence of the checkpoints and of the base Spotiflow weights, and whether they may be redistributed.
-This is unverified. Until it is settled, the checkpoints are not published here.
+**Decision: the checkpoints are not published in this repository.** The reasons, as far as they could be checked:
 
-The training data is research data and is not in this repository. Redistribution of the data is unverified.
+| Item | Finding |
+|---|---|
+| Spotiflow code | BSD-3-Clause (stated on the [Spotiflow repository](https://github.com/weigertlab/spotiflow)). |
+| Spotiflow pretrained weights (`general`) | The Spotiflow README does not state a separate licence or terms for the pretrained weights, which the package downloads on first use. Whether the BSD-3-Clause licence covers them is not stated there. Not verified. |
+| The fine-tuned checkpoints (`best.pt`, `last.pt`) | They are derived from the pretrained weights and trained on the laboratory's historical annotated slides. The rights to redistribute them follow the weights' terms and the laboratory's rights over the data and the annotations. Not verified. |
+| Training data and annotations | Unpublished laboratory research data. Not in this repository. Redistribution not verified. |
+
+To publish the weights later, the following must be settled and recorded here: (1) the licence of the pretrained Spotiflow weights,
+from the Spotiflow authors or their publication; (2) the laboratory's permission to release a model trained on its data;
+(3) the SHA-256 values above, published next to the files (for example as assets of a versioned release). Until then, the checksums
+identify the files held by the laboratory, and nobody can obtain them from this repository.
 
 ## Reproduction limitations
 
