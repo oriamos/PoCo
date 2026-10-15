@@ -24,8 +24,9 @@ Spotiflow pretrained model `general`. The candidate was fine-tuned from it.
 
 ## Training data route
 
-Historical ImageJ-annotated TIFFs. The researcher's embedded marks were used as positive labels, and only field and page
-pairs with marks or with explicit examination evidence were included. The original TIFFs are not in this repository.
+Historical ImageJ-annotated TIFFs. The researcher's embedded marks were used as positive labels. In the default `marked-only`
+mode used for this run, only field and page pairs with at least one embedded mark were included; a pair without marks was left
+out, not treated as zero, and the run has no verified-zero fields. The original TIFFs are not in this repository.
 
 ## Split policy
 

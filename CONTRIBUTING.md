@@ -7,7 +7,7 @@ Please read the privacy rules and the scientific claims policy before you start.
 
 ## Set up the environment
 
-Requirements: Python 3.10 to 3.13 (CI uses 3.12), Node.js 20 (CI uses 20), and `make`.
+Requirements: Python 3.10 to 3.13 (CI runs the full suite on 3.12 and a smoke subset on 3.10, 3.11 and 3.13), Node.js 20 (CI uses 20), and `make`.
 
 ```bash
 make app            # virtualenv (.venv), dependencies, frontend build (if npm is present), server on http://127.0.0.1:8000
