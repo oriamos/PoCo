@@ -1,0 +1,72 @@
+name: model-release
+
+# Publishes the verified fine-tuned model as GitHub Release assets (tag model-<id>). Manual start only.
+# The weights are fetched from the pinned commit of the historical repository and checked against the pinned SHA-256 first;
+# nothing is published when a checksum differs. Installers download these assets and verify the same checksums.
+on:
+  workflow_dispatch:
+    inputs:
+      model_id:
+        description: "Model id (only ft-7e4c89cb-8edc09e3 is defined)"
+        required: true
+        default: ft-7e4c89cb-8edc09e3
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: publish the model release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODEL: ${{ inputs.model_id }}
+      SRC_COMMIT: 8e95882a7a3457bca86fe665289cc6ff49e2821b
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fetch the files from the pinned commit and verify them
+        run: |
+          [ "$MODEL" = "ft-7e4c89cb-8edc09e3" ] || { echo "unknown model id"; exit 1; }
+          mkdir assets
+          base="https://raw.githubusercontent.com/oriamos/polony-counting/$SRC_COMMIT/artifacts/$MODEL"
+          for f in best.pt config.yaml thresholds.yaml train_config.yaml; do
+            curl -fsSL --retry 4 --retry-delay 3 -o "assets/$f" "$base/$f"
+          done
+          cp model-release/model.json model-release/LICENSE-spotiflow.txt assets/
+          cd assets
+          cat > expected.txt <<'EOF'
+          8edc09e3de3bb9da156930cd85f1d054daf6a52b937091b87fd08f0e063061fc  best.pt
+          9c04e562ef8dc1ca4167d032506533051638ef15cbb55e3c5bb58e3baa2164e5  config.yaml
+          f63b656f20f5c45143686c34d04f20a08c078f6e5b88ad2e0f40aab0de24f04f  thresholds.yaml
+          e26936d84f7ef91d4c7b66fffca560c97cf7205dc42c0637d03ff45b4115459c  train_config.yaml
+          EOF
+          sed -i 's/^ *//' expected.txt
+          sha256sum -c expected.txt
+          [ "$(stat -c %s best.pt)" = "47406478" ]
+          rm expected.txt
+          sha256sum best.pt config.yaml thresholds.yaml train_config.yaml model.json LICENSE-spotiflow.txt > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Create the release
+        run: |
+          if gh release view "model-$MODEL" >/dev/null 2>&1; then echo "release model-$MODEL already exists"; exit 1; fi
+          cat > notes.md <<'EOF'
+          Fine-tuned Spotiflow model for PoCo / Polony Review: registry id `ft-7e4c89cb-8edc09e3`, fine-tuned from the pretrained `general` model.
+          Run it with downscale 4, normaliser `valid_unsaturated`, threshold 0.3 (PoCo applies these itself).
+
+          Files: `best.pt` (weights), `config.yaml`, `thresholds.yaml`, `train_config.yaml`, `model.json` (manifest), `LICENSE-spotiflow.txt`, `SHA256SUMS.txt`.
+          The AI installer of PoCo downloads and verifies these files; you do not need to download them by hand.
+
+          **What the numbers mean.** On a held-out split of saved historical data (10 px tolerance, each model at its own threshold) F1 against the saved researcher marks rose from 69.13% (pretrained) to 82.46%, precision 64.89% to 75.14%, recall 73.95% to 91.36%.
+          This is agreement with saved marks, not accuracy on new slides. The model **over-counts more** than the pretrained one (count bias +1.921 vs +1.243 per field), so counts still need human review.
+          Details and limits: MODEL_CARD.md in the PoCo repository.
+
+          **Distribution.** The laboratory approved distribution of this model (confirmation recorded from Ori Amos). The licence of the *upstream pretrained* Spotiflow weights has no separate statement; confirmation from the Spotiflow authors is still outstanding. Spotiflow's BSD-3-Clause notice is attached.
+          Weights come from commit `8e95882a7a3457bca86fe665289cc6ff49e2821b` of oriamos/polony-counting; SHA-256 of `best.pt`: `8edc09e3de3bb9da156930cd85f1d054daf6a52b937091b87fd08f0e063061fc`.
+          EOF
+          sed -i 's/^          //' notes.md
+          gh release create "model-$MODEL" assets/* \
+            --target "$GITHUB_SHA" \
+            --title "Fine-tuned model $MODEL" \
+            --notes-file notes.md

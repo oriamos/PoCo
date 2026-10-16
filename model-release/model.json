@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "ft-7e4c89cb-8edc09e3",
+  "label": "PoCo fine-tuned Spotiflow (ft-7e4c89cb-8edc09e3)",
+  "kind": "finetuned",
+  "base": "general",
+  "weights": "best.pt",
+  "inference_config": {"downscale": 4, "normaliser": "valid_unsaturated", "prob_thresh": 0.3},
+  "files": {
+    "best.pt": {"sha256": "8edc09e3de3bb9da156930cd85f1d054daf6a52b937091b87fd08f0e063061fc", "bytes": 47406478},
+    "config.yaml": {"sha256": "9c04e562ef8dc1ca4167d032506533051638ef15cbb55e3c5bb58e3baa2164e5", "bytes": 416},
+    "thresholds.yaml": {"sha256": "f63b656f20f5c45143686c34d04f20a08c078f6e5b88ad2e0f40aab0de24f04f", "bytes": 48},
+    "train_config.yaml": {"sha256": "e26936d84f7ef91d4c7b66fffca560c97cf7205dc42c0637d03ff45b4115459c", "bytes": 303}
+  },
+  "source": {
+    "repository": "oriamos/polony-counting",
+    "commit": "8e95882a7a3457bca86fe665289cc6ff49e2821b",
+    "path": "artifacts/ft-7e4c89cb-8edc09e3"
+  },
+  "distribution_approval": {
+    "statement": "The laboratory approved distribution of this fine-tuned model to PoCo users.",
+    "recorded_from": "confirmation given by Ori Amos in the PoCo maintenance session",
+    "approver_name_and_date": "not recorded beyond the above; none invented",
+    "scope": "the fine-tuned weights only; the licence of the upstream pretrained weights is a separate, open question"
+  },
+  "evaluation": {
+    "what": "agreement with saved researcher marks on a held-out split of historical data, 10 px tolerance, each model at its own threshold",
+    "pretrained_general": {"precision": 64.89, "recall": 73.95, "f1": 69.13, "count_mae": 3.282, "count_bias": 1.243},
+    "this_model": {"precision": 75.14, "recall": 91.36, "f1": 82.46, "count_mae": 2.014, "count_bias": 1.921},
+    "limits": "not accuracy; one lab's data; the candidate over-counts more than the pretrained model; not validated on new slides"
+  },
+  "upstream": {
+    "code_licence": "BSD-3-Clause (Spotiflow)",
+    "pretrained_weights_licence": "no separate statement found; confirmation from the Spotiflow authors is outstanding"
+  }
+}
