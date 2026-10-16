@@ -78,6 +78,13 @@ switch ($Mode) {
         if ($r.Code -ne 0 -or $r.Out -notmatch 'sha256: [0-9a-f]{64}') { Bad 'prepare-model failed' }
         if ((Get-Content (Join-Path $ph 'config.json') -Raw) -notmatch '"ai_enabled":\s*true') { Bad 'ai_enabled not recorded' }
         Ok 'AI detector installed and model prepared'
+        # the installer fetched, verified and registered the shipped fine-tuned model; it must be the default and really run
+        $old = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        $o = & $vpy (Join-Path $ph 'app\install\ci\smoke_model.py') 2>&1 | Out-String
+        $c = $LASTEXITCODE; $ErrorActionPreference = $old
+        Write-Host ($o -split "`n" | Select-Object -Last 3)
+        if ($c -ne 0 -or $o -notmatch 'smoke OK') { Bad 'shipped fine-tuned model smoke test failed' }
+        Ok 'shipped fine-tuned model is the default and runs with downscale 4, valid_unsaturated, threshold 0.3'
     }
     'uninstall' {
         $un = Join-Path $ph 'app\install\uninstall.ps1'

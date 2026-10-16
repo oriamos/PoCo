@@ -1,5 +1,5 @@
 PoCo / Polony Review
-Version 0.2.0
+Version 0.3.0
 Copyright (c) 2026 Ori Amos
 
 This product is licensed under the MIT License. See the file LICENSE.
@@ -49,8 +49,8 @@ lock file.
    pytest >= 7.4 (tests)
    openpyxl >= 3.1
 
-   Licences below were read from the package metadata installed for the 0.2.0 release tests (Python 3.13, see
-   constraints/release-0.2.0.txt). Metadata can be imprecise; the licence texts are in the upstream projects.
+   Licences below were read from the package metadata installed for the 0.3.0 release tests (Python 3.13, see
+   constraints/release-0.3.0.txt). Metadata can be imprecise; the licence texts are in the upstream projects.
 
    fastapi 0.143.2: MIT
    uvicorn 0.54.0: BSD-3-Clause
@@ -101,3 +101,8 @@ Big-FISH and Spotiflow
 Big-FISH (classical spot detection) and Spotiflow (AI spot detection, optional) are separate projects by
 their own authors. This project uses them as dependencies. Using them here does not mean that their authors
 endorse PoCo / Polony Review.
+
+The fine-tuned model shipped as a release asset was fine-tuned from the pretrained Spotiflow "general" model.
+Spotiflow's BSD-3-Clause notice (Copyright (c) 2023, Albert Dominguez Mantes, Martin Weigert) is distributed with it
+(`LICENSE-spotiflow.txt` in the model release). The pretrained weights have no separate licence statement; see
+MODEL_CARD.md for that open point.

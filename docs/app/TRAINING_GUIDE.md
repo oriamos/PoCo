@@ -89,7 +89,7 @@ Matching is one-to-one within a stated distance. Read 5, 10 and 15 native-pixel 
 ## 6. Results actually saved in this repository
 Source: `artifacts/registry.json` (not published; see [artifacts/README.md](../../artifacts/README.md)), `snapshot_manifest.json` (not published), [`test_lock.json`](../../artifacts/test-set/test_lock.json) and the [checkpoint files](../../artifacts/ft-7e4c89cb-8edc09e3). Recorded results from 15 October 2026, not a fresh rerun on the original images.
 
-Candidate `ft-7e4c89cb-8edc09e3`; base `general`; downscale 4; normaliser `valid_unsaturated`. 10 epochs on **CPU** (despite requesting `auto`) in about 32.6 minutes. It remains a **candidate**; the saved registry has no active model.
+Candidate `ft-7e4c89cb-8edc09e3`; base `general`; downscale 4; normaliser `valid_unsaturated`. 10 epochs on **CPU** (despite requesting `auto`) in about 32.6 minutes. The original registry records it as a **candidate** with no active model. PoCo now ships this model: a fresh AI install registers it as `origin: bundled` and uses it by default, without a locked-test evaluation in the new registry ([MODEL_CARD.md](../../MODEL_CARD.md)).
 
 | Split | Crops | Groups | Labelled points before preparation |
 |---|---:|---:|---:|

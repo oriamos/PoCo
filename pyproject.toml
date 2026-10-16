@@ -1,6 +1,6 @@
 [project]
 name = "polony-review"
-version = "0.2.0"
+version = "0.3.0"
 description = "Human-in-the-loop polony counting: two detectors, researcher review per grid field, lab-format exports with provenance."
 readme = "README.md"
 license = { file = "LICENSE" }

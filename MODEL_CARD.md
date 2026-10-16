@@ -1,6 +1,6 @@
-# Model card: fine-tuned Spotiflow candidate `ft-7e4c89cb-8edc09e3`
+# Model card: fine-tuned Spotiflow model `ft-7e4c89cb-8edc09e3`
 
-A **registry candidate**, not an approved model; the model registry has no active model. The numbers are recorded results from the saved model registry (not published here; the key values are in this card). They were not rerun for this card.
+The model **shipped with PoCo**: the AI installer downloads it and makes it the default Spotiflow model on a fresh install (the pretrained `general` model stays available). The laboratory approved its distribution (confirmation recorded from Ori Amos; no approver name or date beyond that was recorded). It was **not** promoted through the locked-test promotion path: the registry marks it `origin: bundled` and holds no evaluation for it. The numbers below are recorded results from the original model registry (not published; the key values are in this card) and were not rerun here. Release: [model-ft-7e4c89cb-8edc09e3](https://github.com/oriamos/poco/releases/tag/model-ft-7e4c89cb-8edc09e3).
 
 ## Intended use
 
@@ -13,7 +13,7 @@ A **registry candidate**, not an approved model; the model registry has no activ
 - Counting without a researcher's review.
 - Any claim of general accuracy on new scanners, new samples, or other laboratories.
 - Clinical or diagnostic use.
-- Use as the app's default model without promotion with locked-test evidence. Its limitations (incomplete-label bias, positive-count bias, below) apply to any use.
+- Treating its counts as final. Its limitations (incomplete-label bias, positive-count bias, below) apply to any use.
 
 ## Base model
 
@@ -68,37 +68,35 @@ The candidate's count bias is more positive than the pretrained model's (+1.921 
 
 ## Integration status
 
-- Registry status: `candidate`; no active model.
-- The app's Spotiflow model setting defaults to `active` (the promoted model, else pretrained `general`). After `promote`, app detection uses the promoted model. A registry candidate can also be chosen by id in the model picker or API.
-- A fine-tuned model runs with the downscale and normaliser it was trained with and its own saved threshold. The run record names it by registry id and keeps the weights checksum.
-- Promotion requires the locked-test evidence.
-- The weights are not published, so a copy of this repository on its own detects with pretrained `general`. The app uses the model only where the registry and `models/<id>` weights are in its data folder.
+- Installer: `--with-ai` downloads the model from the release above, checks size and SHA-256 against values pinned in `src/polony_app/ml/bundled_model.py`, and registers it (`origin: bundled`, log event `register_bundled`). Repeat installs reuse verified files. It becomes the active model only when none is active; an existing active model, user-trained models and a rollback are never changed.
+- The app's Spotiflow model setting defaults to `active`. The model runs at downscale 4, normaliser `valid_unsaturated`, threshold 0.3 (its own saved `thresholds.yaml`); the run record names it by registry id and keeps the weights checksum. Choose pretrained `general` in the model picker, or `rollback`, to stop using it.
+- User-trained candidates are unchanged: promotion still requires locked-test evidence (`--force --reason` is recorded). Registering the shipped model is a separate, logged action; it invents no evaluation.
+- Opt out: `POLONY_BUNDLED_MODEL=0`. Manual retry: `python install/ai_extra.py model`. Without network the AI install still succeeds with `general`.
+- **Provenance limit:** the original registry entry is not published and could not be read in this migration, so its fields (training hyperparameters, per-run evaluation log) are **not verified here**. Verified here: the SHA-256 and size of `best.pt`, that it loads and runs through PoCo's engine, and that downscale 4, `valid_unsaturated` and threshold 0.3 are applied (`install/ci/smoke_model.py`, public `config.yaml`, `thresholds.yaml`, `train_config.yaml`).
 
-## Checkpoint checksum
+## Files and checksums
 
-The checkpoint files are **not** in this repository. SHA-256 hashes recorded in the saved model registry (not published):
+Release assets: `best.pt`, `config.yaml`, `thresholds.yaml`, `train_config.yaml`, `model.json`, `LICENSE-spotiflow.txt`, `SHA256SUMS.txt`.
 
 | File | SHA-256 |
 |---|---|
-| `best.pt` | `8edc09e3de3bb9da156930cd85f1d054daf6a52b937091b87fd08f0e063061fc` |
-| `last.pt` | `2dbea6ccd0c6e50970e976c7fd22fd052ae14a0bb43141fc84b1420324f68e30` |
+| `best.pt` (47,406,478 bytes) | `8edc09e3de3bb9da156930cd85f1d054daf6a52b937091b87fd08f0e063061fc` |
+| `last.pt` (not shipped, different checkpoint) | `2dbea6ccd0c6e50970e976c7fd22fd052ae14a0bb43141fc84b1420324f68e30` |
 
-The registry records `best.pt` as the registered weights; `last.pt` is the final epoch and is not registered.
+`best.pt` is the registered weights. Verify by hand: `sha256sum -c SHA256SUMS.txt` in the download folder.
 
 ## Licence and redistribution status
 
-**Decision: the checkpoints are not published in this repository.** Findings, as far as they could be checked:
-
-| Item | Finding |
+| Item | Status |
 |---|---|
-| Spotiflow code | BSD-3-Clause (stated on the [Spotiflow repository](https://github.com/weigertlab/spotiflow)). |
-| Spotiflow pretrained weights (`general`) | The Spotiflow README states no separate licence or terms for the pretrained weights, which the package downloads on first use. Whether BSD-3-Clause covers them is not stated. Not verified. |
-| Fine-tuned checkpoints (`best.pt`, `last.pt`) | Derived from the pretrained weights and trained on the laboratory's historical annotated slides. Redistribution rights follow the weights' terms and the laboratory's rights over the data and annotations. Not verified. |
-| Training data and annotations | Unpublished laboratory research data, not in this repository. Redistribution not verified. |
+| Spotiflow code | BSD-3-Clause. Its notice is shipped in the release (`LICENSE-spotiflow.txt`), as BSD-3 requires for redistribution. |
+| Fine-tuned weights | Distribution approved by the laboratory (recorded from Ori Amos). |
+| **Spotiflow pretrained weights (`general`), the base of this model** | **Open.** No separate licence or terms found: the Spotiflow README and the `spotiflow-models` repository README (a title only) state none. Whether BSD-3-Clause covers the weights is not stated. **Needed:** written confirmation from the Spotiflow authors (Dominguez Mantes, Weigert) that derivatives of the pretrained weights may be redistributed, then record it here. |
+| Training data and annotations | Not distributed (unpublished laboratory data). |
 
-To publish the weights, settle and record here: (1) the licence of the pretrained Spotiflow weights, from the Spotiflow authors or their publication; (2) the laboratory's permission to release a model trained on its data; (3) the SHA-256 values above, published next to the files (for example as assets of a versioned release). Until then the checksums identify files held by the laboratory, and nobody can obtain them from this repository.
+The release is published on the laboratory's approval. If the authors' answer restricts redistribution, remove the release assets (`gh release delete model-ft-7e4c89cb-8edc09e3`) and set `POLONY_BUNDLED_MODEL` default off in `bundled_model.py`.
 
 ## Reproduction limitations
 
-- The original test images and the checkpoint files are not in the repository, so inference cannot be rerun from it. The metrics come from saved artifacts.
+- The original test images are not distributed, so the evaluation cannot be rerun. The metrics come from saved artifacts. The checkpoint is in the model release, not in the git repository.
 - Training procedure: [docs/app/TRAINING_GUIDE.md](docs/app/TRAINING_GUIDE.md), [docs/app/FINE_TUNING.md](docs/app/FINE_TUNING.md).

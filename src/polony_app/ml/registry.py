@@ -166,6 +166,39 @@ class Registry:
             return d["models"][mid]
         return self._mutate(fn)
 
+    def register_bundled(self, model_id: str, *, base: str, weights_file: str, weights_sha256: str, artifact: str,
+                         artifact_files: dict, inference_config: dict, source: dict, approval: str) -> dict:
+        """Register a model that ships with a release (the AI installer calls this). Explicit and auditable, not a bypass of
+        ``promote``: the entry is marked ``origin: bundled`` with its source and approval note, the log records
+        ``register_bundled``, and NO evaluation is invented. It becomes the active model only when no model is active; an
+        existing registry entry (even one the user rolled back) and an existing active model are never changed.
+        User-trained candidates still need locked-test evidence to be promoted.
+
+        Returns ``{"entry", "registered", "activated"}``."""
+        def fn(d):
+            e = d["models"].get(model_id)
+            if e is not None:
+                if e.get("weights_sha256") != weights_sha256:
+                    raise MLError(f"registry entry '{model_id}' exists with different weights; not touching it")
+                return {"entry": e, "registered": False, "activated": False}
+            activate = d["active"] is None
+            now = utc_now()
+            e = {"id": model_id, "kind": "finetuned", "base": base, "origin": "bundled", "dataset_version": None,
+                 "status": "active" if activate else "candidate", "created_at": now, "evaluations": [],
+                 "promoted_at": now if activate else None, "previous_active": None,
+                 "inference_config": make_config(inference_config.get("downscale", 1), inference_config.get("normaliser", DEFAULT_NORMALISER)),
+                 "weights_file": weights_file, "weights_sha256": weights_sha256, "artifact": artifact,
+                 "artifact_files": artifact_files, "source": source, "distribution_approval": approval,
+                 "notes": "shipped with PoCo; no locked-test evaluation is stored in this registry (see MODEL_CARD.md)"}
+            if activate:
+                e["promotion"] = {"how": "bundled release model; no evaluation evidence, no --force", "at": now}
+            d["models"][model_id] = e
+            d["active"] = model_id if activate else d["active"]
+            d["log"].append({"at": now, "event": "register_bundled", "id": model_id, "activated": activate,
+                             "source": source.get("release") or source.get("commit")})
+            return {"entry": e, "registered": True, "activated": activate}
+        return self._mutate(fn)
+
     def add_evaluation(self, model_id: str, evaluation: dict) -> None:
         def fn(d):
             if model_id not in d["models"]:

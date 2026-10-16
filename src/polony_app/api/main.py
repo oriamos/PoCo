@@ -1191,9 +1191,11 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
         except Exception:  # noqa: BLE001  an unreadable registry must not break the engine list
             reg = {"active": None, "models": {}}
         active = reg.get("active")
+        kind = "shipped fine-tuned model" if (reg.get("models", {}).get(active) or {}).get("origin") == "bundled" else "promoted model"
         head = {"name": "active", "cached": True, "registry": "default",
-                "label": f"promoted model ({active})" if active else f"no promoted model: pretrained {DEFAULT_PRETRAINED}"}
-        extra = [{"name": mid, "cached": True, "registry": e.get("status") or "registered", "label": f"{mid} ({e.get('status') or 'registered'})"}
+                "label": f"{kind} ({active})" if active else f"no promoted model: pretrained {DEFAULT_PRETRAINED}"}
+        extra = [{"name": mid, "cached": True, "registry": e.get("status") or "registered",
+                  "label": f"{mid} ({'shipped, ' if e.get('origin') == 'bundled' else ''}{e.get('status') or 'registered'})"}
                  for mid, e in sorted(reg.get("models", {}).items()) if e.get("kind") != "pretrained"]
         return [head] + [m for m in models if m.get("name") != "active"] + extra
 

@@ -4,6 +4,8 @@
     ai_extra.py install  [--cuda yes|no|auto]   pip install matching torch+torchvision, then spotiflow; then check
     ai_extra.py check                           import torch, torchvision, spotiflow (+ a torchvision op) and report
     ai_extra.py flag on|off                     record "ai_enabled" in config.json (via polony_app.config)
+    ai_extra.py model                           download + verify the shipped fine-tuned model and register it
+                                                (also done at the end of `install`; safe to repeat; POLONY_BUNDLED_MODEL=0 skips it)
 
 Run it with the venv's python so `pip` targets the venv. Exit codes: 0 ok, 1 failed (Big-FISH still works),
 4 platform without a supported PyTorch build.
@@ -127,6 +129,24 @@ def cmd_flag(on: bool) -> int:
     return 0
 
 
+def cmd_model() -> int:
+    """Fetch the shipped fine-tuned model into the data folder and register it (shared code: polony_app.ml.bundled_model).
+    A failure is reported but never fails the AI install: the pretrained model keeps working."""
+    try:
+        from polony_app.launcher import data_dir
+        from polony_app.ml.bundled_model import install_bundled
+        dd = data_dir()
+        res = install_bundled(dd, progress=lambda m: print(f"  {m}", flush=True))
+    except Exception as exc:  # import problems, unreadable config
+        res = {"status": "failed", "message": str(exc)}
+    if res["status"] == "failed":
+        print(f"The fine-tuned model could not be installed: {res['message']}")
+        print("The pretrained model still works. Retry later with: <venv python> install/ai_extra.py model")
+        return 1
+    print(f"Fine-tuned model: {res['message']}.")
+    return 0
+
+
 def cmd_install(cuda: str, dry: bool = False) -> int:
     p = _current_plan(cuda)
     if not p["supported"]:
@@ -146,12 +166,13 @@ def cmd_install(cuda: str, dry: bool = False) -> int:
     rc = cmd_check()
     if rc == 0:
         cmd_flag(True)
+        cmd_model()        # non-fatal: the pretrained model works without it
     return rc
 
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["describe", "install", "check", "flag"])
+    ap.add_argument("cmd", choices=["describe", "install", "check", "flag", "model"])
     ap.add_argument("arg", nargs="?")
     ap.add_argument("--cuda", default="auto", choices=["yes", "no", "auto"])
     ap.add_argument("--dry-run", action="store_true")
@@ -162,6 +183,8 @@ def main(argv: list[str]) -> int:
         return cmd_install(a.cuda, a.dry_run)
     if a.cmd == "check":
         return cmd_check()
+    if a.cmd == "model":
+        return cmd_model()
     return cmd_flag(a.arg == "on")
 
 

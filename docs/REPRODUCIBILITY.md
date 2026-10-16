@@ -17,18 +17,18 @@ What you can rerun from this repository, what you cannot, and how to reproduce t
 | Item | Why |
 |---|---|
 | Eight-slide exploratory evaluation ([ALL_SLIDES_EVAL.md](app/ALL_SLIDES_EVAL.md)) | The slides and the researcher's marks are unpublished laboratory data. |
-| Saved-data fine-tuning run and its metrics ([STATUS_AND_RESULTS.md](STATUS_AND_RESULTS.md), section B) | The historical TIFFs, the dataset snapshot manifest and the test crops are not in the repository; the checkpoint is not published ([MODEL_CARD.md](../MODEL_CARD.md)). Only the locked test-set record (`artifacts/test-set/test_lock.json`) and the configuration are public. |
+| Saved-data fine-tuning run and its metrics ([STATUS_AND_RESULTS.md](STATUS_AND_RESULTS.md), section B) | The historical TIFFs, the dataset snapshot manifest and the test crops are not in the repository; the checkpoint is a verified release asset ([MODEL_CARD.md](../MODEL_CARD.md)), so inference with it can be rerun, but the evaluation cannot. Only the locked test-set record (`artifacts/test-set/test_lock.json`) and the configuration are public. |
 | Whether identity mapping and annotation completeness were right | Not verifiable from the saved artifacts alone. |
 
 ## Dependencies
 
 * `requirements-app.txt`: direct runtime and test requirements with minimum versions; the installers use it.
-* `constraints/release-0.2.0.txt`: exact versions installed and tested for the 0.2.0 release. CI installs with it on Python 3.12 and runs the smoke tests. It excludes the optional AI packages (Spotiflow, PyTorch); the AI installer pins its own in `install/extra-ai-requirements.txt`.
+* `constraints/release-0.3.0.txt`: exact versions installed and tested for the 0.3.0 release. CI installs with it on Python 3.12 and runs the smoke tests. It excludes the optional AI packages (Spotiflow, PyTorch); the AI installer pins its own in `install/extra-ai-requirements.txt`.
 
 Install with the constraints:
 
 ```bash
-pip install -r requirements-app.txt -c constraints/release-0.2.0.txt
+pip install -r requirements-app.txt -c constraints/release-0.3.0.txt
 ```
 
 Regenerate the constraints for a new release in a clean virtual environment, then add the three header comment lines:

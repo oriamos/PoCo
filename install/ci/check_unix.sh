@@ -66,6 +66,10 @@ ai)  # only meaningful when the installer ran with POLONY_WITH_AI=1
   [ "$(launcher prepare-model | grep -c '^sha256: [0-9a-f]\{64\}$')" = 1 ] || bad "prepare-model gave no sha256"
   grep -q '"ai_enabled": true' "$PH/config.json" || bad "ai_enabled not recorded"
   ok "AI detector installed and model prepared"
+  # the installer fetched, verified and registered the shipped fine-tuned model; it must be the default and really run
+  "$VPY" "$PH/app/install/ci/smoke_model.py" 2>&1 | tail -3 | tee /tmp/smoke_model.out
+  grep -q '^smoke OK' /tmp/smoke_model.out || bad "shipped fine-tuned model smoke test failed"
+  ok "shipped fine-tuned model is the default and runs with downscale 4, valid_unsaturated, threshold 0.3"
   ;;
 open-bundle)  # macOS only: LaunchServices must accept and run the bundle
   [ "$OS" = mac ] || exit 0

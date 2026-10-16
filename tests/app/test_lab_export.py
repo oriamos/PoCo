@@ -8,6 +8,7 @@ import zipfile
 import openpyxl
 import pytest
 
+import polony_app
 from fakes import counting, exclusion, rect
 from labhelp import (COUNTS_XLSX, T7_CSV, T7_XLSX, TEMPLATES, evaluate, field_region, formula_cells, lab_state,
                      lo_recalc, read_template_csv, soffice, template_slides)
@@ -254,7 +255,7 @@ def test_notes_sheet_lists_mapping_ids_hashes_warnings():
     text = "\n".join(" | ".join(str(c.value) for c in row if c.value is not None) for row in ws["Notes"].iter_rows())
     for needle in ("partly covered by exclusion", "entirely covered by exclusion", "T7B", "yellow", "N_A",
                    "cccccccccccc", "FINAL", "0000000000000000000000000000000000000000000000000000000000000000",
-                   "polony_app 0.2.0", "AVERAGE(fields)", "field 1"):
+                   f"polony_app {polony_app.__version__}", "AVERAGE(fields)", "field 1"):
         assert needle in text, needle
     assert "only" in text and "NOT scaled" in text
 

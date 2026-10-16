@@ -6,18 +6,18 @@ Polony Review is a local web app: it runs on **your own computer** and opens in 
 **Windows** (open *PowerShell*: Start menu, type `powershell`, Enter):
 
 ```powershell
-irm https://raw.githubusercontent.com/oriamos/poco/v0.2.0/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/oriamos/poco/v0.3.0/install/install.ps1 | iex
 ```
 **macOS** (open *Terminal*: Cmd+Space, type `terminal`, Enter) **and Linux**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.2.0/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.0/install/install.sh | bash
 ```
 
-This installs the stable tagged release **v0.2.0**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
+This installs the stable tagged release **v0.3.0**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
 **Development version (unstable, testing only):** set `POLONY_REF=main` (Windows: `$env:POLONY_REF='main'`) before the command, or pass `-Ref main` to `install.ps1`. Any tag or branch name works.
 
-If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.2.0`):
+If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.3.0`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File install\install.ps1       # Windows
@@ -97,13 +97,20 @@ Interactively (terminal present, not CI) the installer asks *"Install the AI det
 `torch` and `torchvision` are installed **together as a matching, pinned pair** (torch 2.14.1 / torchvision 0.29.1; a mismatched torchvision breaks Spotiflow with `torchvision::nms does not exist`), then `spotiflow==0.6.5` (`install/extra-ai-requirements.txt`), then an import check that also calls a torchvision operator. If anything fails the installer says so and **Big-FISH still works**. The result is recorded as `"ai_enabled"` in `config.json`.
 
 **Model:** the first AI detection needs the pretrained model (about 88 MB, downloaded once into `~/PolonyReview/models/spotiflow`). To fetch it now, or on a computer that will later be offline: `~/PolonyReview/bin/polony-review prepare-model [--model general]` (Windows: `...\venv\Scripts\python.exe -m polony_app.launcher prepare-model`); it prints the model's sha256. Without internet, copy the model folder (`general/` with `config.yaml` and the weights) into that directory, or set `POLONY_MODEL_DIR`. `polony-review status` shows `AI detector: installed (spotiflow x, torch y, device cpu|cuda|mps)` or `not installed`.
+**Fine-tuned model (installed with the AI detector):** the installer also downloads PoCo's fine-tuned model `ft-7e4c89cb-8edc09e3` (47 MB) from the [model release](https://github.com/oriamos/poco/releases/tag/model-ft-7e4c89cb-8edc09e3) into `<your data folder>/models/` (`~/PolonyReviewData/models`), checks its SHA-256 and registers it as the default Spotiflow model (downscale 4, `valid_unsaturated`, threshold 0.3 are applied for you). The pretrained `general` model stays in the picker. Re-running the installer reuses the verified files; an existing default model of yours is kept. If the download fails, the install still succeeds with `general`; retry with the command below. Offline: download the release files into that folder, then run the same command.
+```bash
+~/PolonyReview/venv/bin/python ~/PolonyReview/app/install/ai_extra.py model     # Windows: %LOCALAPPDATA%\PolonyReview\venv\Scripts\python.exe ...\app\install\ai_extra.py model
+POLONY_BUNDLED_MODEL=0 bash install.sh --with-ai                                # skip the fine-tuned model; use general only
+```
+Go back to the pretrained model: choose `general` in the model picker, or run the registry `rollback` ([TRAINING_GUIDE](TRAINING_GUIDE.md)).
+
 **Spotiflow on Mac: troubleshooting**
 * `polony-review status` must say `AI detector: installed (... device mps)`. `device cpu` on an M1 means macOS older than 12.3 or an Intel build of Python; the detector still works, only slower.
 * If an MPS operation is missing or fails, the run is repeated once on the CPU automatically; the run's notes and the Detection engine panel say so (`device_fallback`), and later slides go straight to the CPU. Results are the same, only slower.
 * Log: `~/PolonyReview/logs/server.log` (also `launcher.log`); look for `Spotiflow inference failed` or `retried on cpu`.
 * Re-install the AI part: run the install command again with `--with-ai`; it clears the macOS quarantine flag on the libraries and prints the check line.
 
-**Why opt-in:** PyTorch makes the installation about 3x larger here (several GB with CUDA) and much slower, while most reviews only need Big-FISH. Uninstalling removes the AI packages with the program but **keeps the downloaded models** (`~/PolonyReview/models`) unless you pass `--purge-data` / `-PurgeData`.
+**Why opt-in:** PyTorch makes the installation about 3x larger here (several GB with CUDA) and much slower, while most reviews only need Big-FISH. Uninstalling removes the AI packages with the program but **keeps the downloaded models** (`~/PolonyReview/models`, and your data folder with the fine-tuned model) unless you pass `--purge-data` / `-PurgeData`.
 
 ## Security note
 The app has **no login**. It listens on `127.0.0.1` (this computer only) and cannot be reached from the network, but anyone who can use your computer account can open it and see your data. Do not expose the port with port-forwarding or tunnels.

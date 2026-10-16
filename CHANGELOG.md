@@ -3,6 +3,27 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
+## 0.3.0 — the AI install ships the fine-tuned model (2026-10-16)
+
+### Added
+
+* **A fresh AI install downloads and uses the fine-tuned model** `ft-7e4c89cb-8edc09e3` (downscale 4, `valid_unsaturated`, threshold 0.3).
+  The files are assets of the GitHub Release `model-ft-7e4c89cb-8edc09e3` (built by `.github/workflows/model-release.yml` from a pinned commit,
+  checksummed, with the Spotiflow BSD-3 notice). The laboratory approved distribution (recorded from Ori Amos).
+* `polony_app.ml.bundled_model`: atomic download, size and SHA-256 check against pinned values, reuse on repeat installs; shared by the
+  Windows, macOS and Linux installers through `install/ai_extra.py` (`ai_extra.py model` retries; `POLONY_BUNDLED_MODEL=0` opts out).
+  A failed download never fails the AI install.
+* `Registry.register_bundled`: an explicit, logged registration (`origin: bundled`, no invented evaluation). It activates the model only
+  when none is active and never changes existing models, the active model or a rollback. Promotion of user-trained candidates still
+  needs locked-test evidence.
+* `install/ci/smoke_model.py`: real inference with the shipped checkpoint through the app's default path, run by the AI install check on all three platforms.
+
+### Not changed / open
+
+* The licence of the upstream pretrained Spotiflow weights has no separate statement; confirmation from the authors is outstanding
+  ([MODEL_CARD.md](MODEL_CARD.md)). The original registry entry is not published; its fields are not verified here.
+* The model's results are agreement with saved marks, not accuracy; it over-counts more than the pretrained model.
+
 ## 0.2.0 — the application uses the promoted model (2026-10-15)
 
 ### Changed

@@ -1,6 +1,6 @@
-# Release constraints for PoCo / Polony Review 0.2.0 (reproducibility aid, not a guarantee of bit-for-bit results).
+# Release constraints for PoCo / Polony Review 0.3.0 (reproducibility aid, not a guarantee of bit-for-bit results).
 # Generated with Python 3.13.16 on Linux from: pip install -r requirements-app.txt && pip freeze
-# Regenerate: see docs/REPRODUCIBILITY.md. Use: pip install -r requirements-app.txt -c constraints/release-0.2.0.txt
+# Regenerate: see docs/REPRODUCIBILITY.md. Use: pip install -r requirements-app.txt -c constraints/release-0.3.0.txt
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.15.1

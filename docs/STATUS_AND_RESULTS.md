@@ -52,18 +52,18 @@ Limits:
 
 * The original test images are not in this repository, so inference cannot be rerun from it.
 * Identity mapping and annotation completeness cannot be checked from the saved artifacts alone.
-* The checkpoint is not in this repository. See [MODEL_CARD.md](../MODEL_CARD.md), [artifacts/README.md](../artifacts/README.md).
+* The checkpoint is a release asset, not in git. See [MODEL_CARD.md](../MODEL_CARD.md), [artifacts/README.md](../artifacts/README.md).
 
 ## C. Application integration
 
-Integrated: `promote` -> the app uses it.
+Integrated: a fresh AI install downloads, verifies and uses the fine-tuned model.
 
-* The Spotiflow model setting defaults to `active`: the promoted model of the registry, or the pretrained `general` model when none is promoted.
-* After `promote`, normal app detection uses the promoted model. A registry candidate can also be chosen by id in the model picker or the API.
-* A fine-tuned model runs with the downscale and normaliser it was trained with (overriding the UI settings for that model) and its own saved threshold.
+* `install --with-ai` fetches the model release assets, verifies size and SHA-256 against pinned values, and registers the model (`origin: bundled`, logged as `register_bundled`, no evaluation invented). It becomes the default only when no model is active; existing models, the active model and a rollback are left alone. Repeat installs reuse verified files.
+* The Spotiflow model setting defaults to `active`. The shipped model runs with downscale 4, normaliser `valid_unsaturated` and its saved threshold 0.3, verified end to end with the real checkpoint (`install/ci/smoke_model.py`). The pretrained `general` model stays available.
 * The run record names the model by registry id and keeps the weights checksum.
-* Promotion still requires the locked-test evidence ([app/TRAINING_GUIDE.md](app/TRAINING_GUIDE.md#714-promote-only-after-accepting-the-evidence)).
-* In this repository the candidate `ft-7e4c89cb-8edc09e3` has status `candidate`, there is no active model, and its weights are not published. A copy of the repository on its own therefore still detects with pretrained `general`; the app uses a model only where the registry and `models/<id>` weights are in its data folder.
+* User-trained candidates still need locked-test evidence to be promoted ([app/TRAINING_GUIDE.md](app/TRAINING_GUIDE.md#714-promote-only-after-accepting-the-evidence)).
+* The shipped model has **no evaluation stored in the registry**; its numbers are the recorded results in section B. The original registry entry is not published, so its other fields are not verified here.
+* Distribution is approved by the laboratory. The upstream pretrained-weights licence is unconfirmed (MODEL_CARD.md, "Licence and redistribution status").
 
 ## What is open
 
