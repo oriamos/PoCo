@@ -57,7 +57,14 @@ The icon opens Polony Review in its own window (no tabs or address bar) using th
 * Restarting or shutting down the computer also stops it.
 
 ## Update
-Run the same install command again. It stops the running app, fetches the newest code, updates the libraries and recreates the icons. Your data is untouched.
+From the terminal, no new download of the whole app:
+```bash
+~/PolonyReview/bin/polony-review update --check   # is there a newer release?
+~/PolonyReview/bin/polony-review update           # update (add --ref main for the unstable development branch)
+```
+On Windows: `& "$env:LOCALAPPDATA\PolonyReview\venv\Scripts\python.exe" -m polony_app.launcher update`. It fetches the newest release's installer (checked against the release's `SHA256SUMS.txt`), fetches only the changed code with git, and keeps the Python environment, the installed libraries (including the AI detector) and your settings. Re-running the install command from the README does the same.
+
+The install command does the same and works too: it stops the running app, fetches the newest code, updates the libraries and recreates the icons. Your data is untouched.
 
 ## Uninstall
 ```powershell
