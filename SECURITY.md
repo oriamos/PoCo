@@ -31,7 +31,7 @@ The app runs on your computer and uploads nothing itself. Its data is sensitive:
 - `install/install.sh` and `install/install.ps1` download over HTTPS from `github.com`, `pypi.org`, `download.pytorch.org` (AI detector only) and `astral.sh` (only if no suitable Python is installed).
 - They run without administrator rights, install into your user folder, and do not use `sudo`.
 - The AI installer downloads the fine-tuned model from the `model-ft-7e4c89cb-8edc09e3` release and accepts it only if size and SHA-256 equal the values pinned in `src/polony_app/ml/bundled_model.py`; a different file is deleted, never loaded.
-- They install the tagged release (`v0.3.1` for this version), not `main`; `POLONY_REF=main` installs the unstable development branch.
+- They install the tagged release (`v0.3.2` for this version), not `main`; `POLONY_REF=main` installs the unstable development branch.
 - Each GitHub Release attaches the installer scripts and `SHA256SUMS.txt`. The README shows how to download the script, verify its SHA-256, read it, then run it. `curl ... | bash` runs code you have not read; use the verified path for a version you have not reviewed.
 - Not verified: the hash of the application archive and of the Python packages (package downloads use HTTPS and PyPI's integrity checks). Planned: verify the application archive against the release checksum.
 

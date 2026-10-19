@@ -3,7 +3,7 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
-## Unreleased
+## 0.3.2 — one-click rejection of debris-like Big-FISH-only candidates (2026-10-19)
 
 ### Added
 
