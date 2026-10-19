@@ -549,11 +549,17 @@ def _merge_constituents(a: Analysis, o: DetectedObject, seen: set[str] | None = 
 def _h_delete(tx: Tx, a: Analysis, p: dict, ts: str) -> None:
     ids = _ids(p)
     objs = [tx.get_live(oid) for oid in ids]  # validate all before mutating
+    # optional short note kept in each object's history (e.g. the batch rejection of debris-like Big-FISH-only
+    # candidates); the deletion itself is the same user decision either way
+    note = p.get("note")
+    if note is not None and (not isinstance(note, str) or len(note) > 200):
+        raise ReviewError("invalid_payload", "'note' must be a string of at most 200 characters", 422)
+    msg = f"deleted by user ({note})" if note else "deleted by user"
     tx.touch_book()
     for o in objs:
         tx.touch_obj(o)
         o.deleted = True
-        _hist(o, "deleted by user", ts)
+        _hist(o, msg, ts)
         # explicit marker (snapshotted for undo/redo): this deletion was a user decision
         if o.id not in tx.state.user_deleted:
             tx.state.user_deleted.append(o.id)

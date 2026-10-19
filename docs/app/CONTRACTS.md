@@ -71,7 +71,7 @@ def run_detection(red: np.ndarray, green: np.ndarray, regions: list[Region], req
 - `GET /api/analyses/{id}/review-queue` -> `[{object_id, reasons, priority, x, y}]` sorted
 - `GET /api/analyses/{id}/thumb/{object_id}` `?size=64&view=composite` -> png crop around object
 - `POST /api/analyses/{id}/actions` `{type, payload}` -> `Analysis`. Payloads:
-  add `{x,y,cls}` · delete `{object_ids}` · move `{object_id,x,y}` · reclassify `{object_ids,cls}` ·
+  add `{x,y,cls}` · delete `{object_ids, note?}` (note: <= 200 chars, kept in each object's history) · move `{object_id,x,y}` · reclassify `{object_ids,cls}` ·
   merge `{object_ids}` (>=2 -> one object at centroid, evidence union) ·
   split `{object_id,positions:[[x,y],[x,y]],classes:[cls,cls]}` · confirm `{object_ids}` ·
   accept_region `{region_id}` (marks all non-deleted, non-uncertain objects reviewed; refuses if region not inspected) ·
