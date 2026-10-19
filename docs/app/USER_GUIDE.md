@@ -78,6 +78,7 @@ The **Review** tab lists objects with a measured concern, most urgent first (`un
 
 Reasons (cut-offs in [PARAMETERS.md](PARAMETERS.md); unvalidated starting points). Weak signal, near threshold, saturated, dense cluster, suspicious (elongated or oversized) shape, near edge, ambiguous match: as named.
 
+* **Reject debris-like Big-FISH-only candidates** (button above the queue, shown when both engines ran): deletes in one undoable step every unreviewed automatic candidate that only Big-FISH found and that is also `debris_like`. On 7 research slides 97 % of these (333 of 345) had no researcher mark within 10 px, against 18 % of the other Big-FISH-only objects. It is your decision, recorded in each object's history; Ctrl+Z restores all of them. Reviewed and manually added spots are never touched.
 * **debris-like**: more compact/sharp than a typical polony (small-scale LoG response >= large-scale response); autofluorescent dust is typically small, very bright and visible in both channels. A **flag, not a verdict**: some real, small young polonies look like this. A pair debris-like in both channels is shown as `uncertain`, not yellow.
 * **uncertain**: the app declines to choose; look at both channels and decide.
 

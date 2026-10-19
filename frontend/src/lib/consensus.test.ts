@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DetectedObject, ReviewQueueItem } from '../api/types';
 import type { QcStatus } from '../api/types';
-import { clampQcN, filteredQueue, matchesFilter, objectStatus, qcBoundText, QC_DEFAULT_N, triangleD } from './consensus';
+import { clampQcN, debrisSpeckIds, filteredQueue, isDebrisSpeck, matchesFilter, objectStatus, qcBoundText, QC_DEFAULT_N, triangleD } from './consensus';
 
 const ev = (s?: string) => ({ detected: true, x: 1, y: 1, peak_intensity: 1, local_background: 1, snr: 1, saturated: false, spot_id: null, consensus_status: s ?? null }) as DetectedObject['red'];
 const none = () => ({ ...ev(), detected: false });
@@ -51,5 +51,34 @@ describe('agreement QC wording', () => {
     expect(t).toMatch(/exact 95 % interval 5\.7 % to 30 %/);
     expect(t).toMatch(/sample of 40/);
     expect(t).not.toMatch(/correct|verified|accuracy/i);
+  });
+});
+
+describe('debris-like Big-FISH-only batch rejection', () => {
+  const speck = (id: string, extra: Partial<DetectedObject> = {}): DetectedObject =>
+    ({ ...obj(id, 'bigfish_only'), review_reasons: ['bigfish_only', 'debris_like'], region_id: 'c1', ...extra }) as DetectedObject;
+  const counting = { id: 'c1', kind: 'counting' } as unknown as import('../api/types').Analysis['regions'][number];
+  const analysis = (objects: DetectedObject[], regions = [counting]) => ({ objects, regions }) as unknown as import('../api/types').Analysis;
+  it('needs both reasons', () => {
+    expect(isDebrisSpeck(speck('a'))).toBe(true);
+    expect(isDebrisSpeck({ ...speck('a'), review_reasons: ['debris_like'] })).toBe(false);
+    expect(isDebrisSpeck({ ...speck('a'), review_reasons: ['bigfish_only'] })).toBe(false);
+  });
+  it('skips reviewed, manual, deleted and uncounted objects', () => {
+    const ids = debrisSpeckIds(
+      analysis([
+        speck('keep1'),
+        speck('reviewed', { reviewed: true }),
+        speck('manual', { origin: 'manual' }),
+        speck('gone', { deleted: true }),
+        speck('outside', { region_id: null }),
+        { ...obj('plain', 'bigfish_only'), region_id: 'c1' } as DetectedObject,
+        speck('keep2'),
+      ]),
+    );
+    expect(ids).toEqual(['keep1', 'keep2']);
+  });
+  it('without counting regions every live object counts', () => {
+    expect(debrisSpeckIds(analysis([speck('x', { region_id: null })], []))).toEqual(['x']);
   });
 });

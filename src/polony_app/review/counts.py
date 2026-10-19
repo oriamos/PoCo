@@ -6,6 +6,7 @@ from polony_app.schemas import (
     Counts,
     DetectedObject,
     ObjectClass,
+    Origin,
     RegionKind,
     ReviewReason,
 )
@@ -92,13 +93,23 @@ def compute_counts(analysis: Analysis) -> dict:
     return {"regions": regions, "slide": slide}
 
 
+def is_debris_speck(o: DetectedObject) -> bool:
+    """A Big-FISH-only detection that is also debris_like (compact + bright at both scales): a speck in 97 % of cases
+    (345 objects on 7 research slides; 18 % for the other Big-FISH-only). The strongest measured false-positive
+    signal; the Review tab offers to reject them in one undoable action (never removed automatically)."""
+    return ReviewReason.bigfish_only in o.review_reasons and ReviewReason.debris_like in o.review_reasons
+
+
+def debris_speck_candidates(analysis: Analysis) -> list[DetectedObject]:
+    """Counted, unreviewed, automatic debris specks (see is_debris_speck): what the batch rejection would delete."""
+    return [o for o in counted_objects(analysis) if o.origin == Origin.auto and not o.reviewed and is_debris_speck(o)]
+
+
 def object_priority(o: DetectedObject) -> int | None:
     pr = [REASON_PRIORITY[r] for r in o.review_reasons if r in REASON_PRIORITY]
     if o.cls == ObjectClass.uncertain:
         pr.append(UNCERTAIN_PRIORITY)
-    # a Big-FISH-only detection that is also debris_like (compact + bright at both scales) is a speck in 97 % of cases
-    # (345 objects on 7 research slides; 18 % for the other Big-FISH-only): review it as early as saturated objects
-    if ReviewReason.bigfish_only in o.review_reasons and ReviewReason.debris_like in o.review_reasons:
+    if is_debris_speck(o):   # review it as early as saturated objects
         pr.append(DEBRIS_BF_ONLY_PRIORITY)
     return min(pr) if pr else None
 

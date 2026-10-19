@@ -3,6 +3,15 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
+## 0.3.2 — one-click rejection of debris-like Big-FISH-only candidates (2026-10-19)
+
+### Added
+
+* **Review tab: "Reject N debris-like Big-FISH-only candidates".** One undoable `delete` of every unreviewed automatic candidate that only
+  Big-FISH found and that is also `debris_like` (97 % had no researcher mark on 7 research slides: 333 of 345, against 18 % of the other
+  Big-FISH-only objects). It is a reviewer action recorded in each object's history (`delete` now accepts an optional `note`); nothing is
+  removed automatically. Helpers: `review/counts.is_debris_speck`, `debris_speck_candidates`; `lib/consensus.debrisSpeckIds` in the UI.
+
 ## 0.3.1 — terminal update and a usable default grid (2026-10-19)
 
 ### Added

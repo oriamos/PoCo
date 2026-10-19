@@ -6,18 +6,18 @@ Polony Review is a local web app: it runs on **your own computer** and opens in 
 **Windows** (open *PowerShell*: Start menu, type `powershell`, Enter):
 
 ```powershell
-irm https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.ps1 | iex
 ```
 **macOS** (open *Terminal*: Cmd+Space, type `terminal`, Enter) **and Linux**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.sh | bash
 ```
 
-This installs the stable tagged release **v0.3.1**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
+This installs the stable tagged release **v0.3.2**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
 **Development version (unstable, testing only):** set `POLONY_REF=main` (Windows: `$env:POLONY_REF='main'`) before the command, or pass `-Ref main` to `install.ps1`. Any tag or branch name works.
 
-If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.3.1`):
+If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.3.2`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File install\install.ps1       # Windows

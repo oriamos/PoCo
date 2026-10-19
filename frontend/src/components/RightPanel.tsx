@@ -11,7 +11,7 @@ import { SaveTab } from './SaveTab';
 import { TotalsTab } from './TotalsTab';
 import { AgreementInfo } from './EngineLayers';
 import { SCORE_LABEL, STATUS_LABEL, filteredQueue, hasEngineInfo, objectStatus } from '../lib/consensus';
-import { ConsensusSummaryCard, EngineFilterBar, QcSample } from './EngineReview';
+import { ConsensusSummaryCard, DebrisBatchReject, EngineFilterBar, QcSample } from './EngineReview';
 
 const TABS: { id: RightTab; label: string }[] = [
   { id: 'review', label: 'Review' },
@@ -289,6 +289,7 @@ function ReviewTab() {
         <>
           <ConsensusSummaryCard />
           <EngineFilterBar filter={filter} onChange={(f) => patch({ reviewFilter: f })} />
+          <DebrisBatchReject />
           <QcSample />
         </>
       )}

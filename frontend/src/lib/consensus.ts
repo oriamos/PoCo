@@ -1,4 +1,4 @@
-import type { ConsensusStatus, DetectedObject, EngineRunInfo, QcStatus, ReviewQueueItem } from '../api/types';
+import type { Analysis, ConsensusStatus, DetectedObject, EngineRunInfo, QcStatus, ReviewQueueItem } from '../api/types';
 
 /** Review filter by engine status. */
 export type EngineFilter = 'all' | 'disagreements' | 'agreement' | 'bigfish_only' | 'spotiflow_only' | 'human_added' | 'unresolved';
@@ -89,4 +89,17 @@ export function qcBoundText(qc: QcStatus | null | undefined): string {
 export function clampQcN(n: number, eligible?: number | null): number {
   const k = Math.max(1, Math.round(Number.isFinite(n) ? n : QC_DEFAULT_N));
   return eligible != null && eligible > 0 ? Math.min(k, eligible) : k;
+}
+
+/** A Big-FISH-only detection that is also debris_like: a speck in 97 % of cases on 7 research slides (333 of 345 had no
+ * researcher mark within 10 px, against 18 % of the other Big-FISH-only objects). Same rule as the server's queue priority. */
+export const isDebrisSpeck = (o: DetectedObject) => o.review_reasons.includes('bigfish_only') && o.review_reasons.includes('debris_like');
+
+/** Ids the "reject debris-like Big-FISH-only candidates" action would delete: counted (inside a counting region when
+ * one exists), not deleted, automatic, not yet reviewed, and a debris speck. Mirrors review/counts.debris_speck_candidates. */
+export function debrisSpeckIds(a: Analysis): string[] {
+  const hasRegions = a.regions.some((r) => r.kind === 'counting');
+  return a.objects
+    .filter((o) => !o.deleted && (!hasRegions || o.region_id != null) && o.origin === 'auto' && !o.reviewed && isDebrisSpeck(o))
+    .map((o) => o.id);
 }

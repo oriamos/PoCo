@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ConsensusSummary } from '../api/types';
-import { clampQcN, ENGINE_FILTERS, QC_DEFAULT_N, qcBoundText, type EngineFilter } from '../lib/consensus';
+import { clampQcN, debrisSpeckIds, ENGINE_FILTERS, QC_DEFAULT_N, qcBoundText, type EngineFilter } from '../lib/consensus';
 import { useApp } from '../state/store';
 import { AgreementInfo } from './EngineLayers';
 
@@ -110,5 +110,35 @@ export function QcSample() {
         <AgreementInfo />
       </div>
     </details>
+  );
+}
+
+export const DEBRIS_REJECT_NOTE = 'batch: debris-like Big-FISH-only candidate';
+
+/** One undoable `delete` of every unreviewed debris-like Big-FISH-only candidate. The objects stay in the history
+ * as user rejections (tombstones); Ctrl+Z brings them all back. Nothing is removed without this click. */
+export function DebrisBatchReject() {
+  const a = useApp((s) => s.current)!;
+  const act = useApp((s) => s.act);
+  const toast = useApp((s) => s.toast);
+  const locked = a.status === 'finalized';
+  const ids = debrisSpeckIds(a);
+  const run = async () => {
+    if (!ids.length) return;
+    const msg =
+      `Reject ${ids.length} unreviewed candidate(s) that only Big-FISH found and that look like debris (compact and bright at both scales)? ` +
+      'On 7 research slides 97 % of such candidates had no researcher mark. They are deleted as your decision (Ctrl+Z undoes all of them); ' +
+      'reviewed and manually added spots are not touched.';
+    if (!confirm(msg)) return;
+    const next = await act('delete', { object_ids: ids, note: DEBRIS_REJECT_NOTE });
+    if (next) toast('success', `Rejected ${ids.length} debris-like Big-FISH-only candidate(s). Ctrl+Z undoes.`);
+  };
+  return (
+    <div className="row wrap small" data-testid="debris-batch">
+      <button className="btn sm" disabled={locked || ids.length === 0} onClick={() => void run()} data-testid="debris-batch-reject" title="Big-FISH only + debris_like, unreviewed, inside the counting regions">
+        Reject {ids.length} debris-like Big-FISH-only candidate{ids.length === 1 ? '' : 's'}
+      </button>
+      <span className="muted">97 % were specks on the validated slides; one undoable action, nothing is removed automatically.</span>
+    </div>
   );
 }

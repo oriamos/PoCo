@@ -88,7 +88,10 @@ nothing is ever auto-rejected or auto-deleted because one engine missed it.**
   suspicious_shape 6, near_edge 7, **qc_sample 8**. Unflagged agreements are not queued. Exception: an object that
   is both `bigfish_only` and `debris_like` is queued at priority 1 (with saturated): on 7 research slides 97 % of
   these (333 of 345) had no researcher mark within 10 px, against 18 % of the other Big-FISH-only objects (size /
-  compactness separates specks from real dim spots better than disagreement alone). Never auto-removed.
+  compactness separates specks from real dim spots better than disagreement alone). Never auto-removed: the Review tab
+  offers **Reject N debris-like Big-FISH-only candidates**, one `delete` action with `note` (counted, unreviewed, automatic
+  objects only; `review/counts.debris_speck_candidates`), recorded in each object's history as a user rejection and undone
+  as a whole by Ctrl+Z.
 * **QC sample** `POST /consensus/qc-sample {n, seed, fraction?}`: a FIXED-SIZE sample, not a fraction. A 5 %
   sample cannot bound the agreement error (pooled agreement false-positive rate 0.153; 5 % of 24-296 agreements
   is 1-15 objects). Eligible = counted, non-deleted, unreviewed objects with at least one detected channel whose

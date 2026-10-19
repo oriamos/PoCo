@@ -378,3 +378,33 @@ def test_invalid_payloads_and_unknown_action():
     with pytest.raises(ReviewError) as e:
         act(st, "delete", object_ids=["a"])
     assert e.value.code == "object_deleted"
+
+
+def test_debris_speck_candidates_and_batch_delete_with_note():
+    R = ReviewReason
+    st = make_state(
+        [
+            obj("speck", 20, 20, review_reasons=[R.bigfish_only, R.debris_like]),
+            obj("speck_reviewed", 30, 20, review_reasons=[R.bigfish_only, R.debris_like], reviewed=True),
+            obj("speck_manual", 40, 20, origin=Origin.manual, review_reasons=[R.bigfish_only, R.debris_like]),
+            obj("bf_only", 50, 20, review_reasons=[R.bigfish_only]),
+            obj("debris_agree", 60, 20, review_reasons=[R.debris_like]),
+            obj("outside", 150, 150, review_reasons=[R.bigfish_only, R.debris_like]),
+        ],
+        [counting()],
+    )
+    from polony_app.review.counts import debris_speck_candidates, is_debris_speck
+
+    assert is_debris_speck(st.analysis.objects[0]) and not is_debris_speck(st.analysis.objects[3])
+    ids = [o.id for o in debris_speck_candidates(st.analysis)]
+    assert ids == ["speck"]
+    act(st, "delete", object_ids=ids, note="batch: debris-like Big-FISH-only candidate")
+    gone = next(o for o in st.analysis.objects if o.id == "speck")
+    assert gone.deleted
+    assert gone.history[-1].endswith("deleted by user (batch: debris-like Big-FISH-only candidate)")
+    assert "speck" in st.user_deleted
+    assert debris_speck_candidates(st.analysis) == []
+    engine.undo(st)
+    assert not next(o for o in st.analysis.objects if o.id == "speck").deleted
+    with pytest.raises(ReviewError):
+        act(st, "delete", object_ids=["speck"], note="x" * 201)

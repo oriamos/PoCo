@@ -35,14 +35,14 @@ $env:PYTHONPATH='src'; .venv\Scripts\python -m polony_app --data-dir demo-data\a
 ```
 
 ## Install (one command, no administrator rights)
-Release **v0.3.1** (research software, see the status below). The installers download this tagged release, not the moving `main` branch.
+Release **v0.3.2** (research software, see the status below). The installers download this tagged release, not the moving `main` branch.
 **Windows** (PowerShell):
 ```powershell
-irm https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.ps1 | iex
 ```
 **macOS / Linux** (Terminal):
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.sh | bash
 ```
 It installs into your user folder (about 650 MB; downloads Python 3.12 only when no Python 3.10–3.13 is present) and adds a **PoCo / Polony Review** desktop icon. Uninstalling keeps your data folder.
 **Update** (no full re-download; libraries, AI detector, settings and data are kept), from version 0.3.1 on:
@@ -53,7 +53,7 @@ It installs into your user folder (about 650 MB; downloads Python 3.12 only when
 On Windows: `& "$env:LOCALAPPDATA\PolonyReview\venv\Scripts\python.exe" -m polony_app.launcher update`. An older installation updates once by running the install command again. Details: [docs/app/INSTALL.md](docs/app/INSTALL.md).
 **Safer alternative** (no script piped into a shell): download the script and the release's `SHA256SUMS.txt`, verify the checksum, read the script, run it.
 ```bash
-base=https://github.com/oriamos/poco/releases/download/v0.3.1
+base=https://github.com/oriamos/poco/releases/download/v0.3.2
 curl -fsSLO $base/install.sh && curl -fsSLO $base/SHA256SUMS.txt
 grep ' install.sh$' SHA256SUMS.txt | sha256sum -c -     # macOS: ... | shasum -a 256 -c -    (must print: install.sh: OK)
 less install.sh
@@ -84,7 +84,7 @@ Results so far ([docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md)): an **
 These numbers measure **agreement with saved marks, not accuracy** on new images. The model also **over-counts more** than the pretrained one (count bias +1.921 against +1.243 per field), so review every field. The original test images are not distributed, so the evaluation cannot be re-run.
 
 ## Status and limitations
-* **Status:** research software, release 0.3.1. Run end to end on real two-channel slides against the researcher's marks; accuracy is partial and the defaults are not final.
+* **Status:** research software, release 0.3.2. Run end to end on real two-channel slides against the researcher's marks; accuracy is partial and the defaults are not final.
 * **Limitations:** pixel size is not applied to distances (everything is in image pixels unless you set it); the shipped model's evaluation is agreement with saved marks only and its base-weights licence is unconfirmed ([MODEL_CARD.md](MODEL_CARD.md)); Intel Macs support Big-FISH only; Apple Silicon Spotiflow falls back to CPU for unsupported operations.
 * **Test results** are in the CI badges above and the [CI workflow runs](https://github.com/oriamos/poco/actions). This README does not copy test counts, which go stale.
 
