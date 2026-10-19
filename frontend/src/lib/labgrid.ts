@@ -148,11 +148,11 @@ export function storedGridCells(a: Analysis): (GridCell & { state: GridFieldStat
   return generateGrid(fromApiGrid(g)).map((c) => ({ ...c, state: on.has(c.index) ? 'on' : off.has(c.index) ? 'off' : 'missing' }));
 }
 
-/** Default grid for an image: 4 x 7 cells of ~316 px (the researcher's test image), centred, oriented by aspect. */
+/** Default grid for an image: 4 x 6 = 24 cells of ~316 px (the lab template has fields 1-24), centred, oriented by aspect. */
 export function defaultGrid(w: number, h: number): GridSpec {
   const landscape = w >= h;
-  const rows = landscape ? 4 : 7;
-  const cols = landscape ? 7 : 4;
+  const rows = landscape ? 4 : 6;
+  const cols = landscape ? 6 : 4;
   let cell = 316;
   if (cols * cell > w || rows * cell > h) cell = Math.max(1, Math.floor(Math.min(w / cols, h / rows)));
   return {

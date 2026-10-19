@@ -664,7 +664,7 @@ async function labSuite() {
   check('blank-vs-zero note shown', /No region = BLANK cell, region with 0 objects = 0/.test(await tid('field-note').innerText()));
   await tid('grid-toggle').click();
   check('numbering-order caveat shown', /confirm with your lab convention/.test(await tid('grid-order-note').innerText()));
-  check('defaults prefilled 4x7', (await tid('grid-rows').inputValue()) === '4' && (await tid('grid-cols').inputValue()) === '7');
+  check('defaults prefilled 4x6 (24 lab fields)', (await tid('grid-rows').inputValue()) === '4' && (await tid('grid-cols').inputValue()) === '6');
   // image is small: use an explicit 2x3 grid inside the demo region
   const setNum = async (k, v) => tid(`grid-${k}`).fill(String(v));
   await setNum('rows', 2); await setNum('cols', 3); await setNum('cellW', 100); await setNum('cellH', 100); await setNum('originX', 20); await setNum('originY', 20);

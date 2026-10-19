@@ -77,10 +77,16 @@ function Header() {
   return (
     <header className="topbar">
       <div className="brand">
-        <span className="logo" aria-hidden>
-          <i className="r" />
-          <i className="g" />
-        </span>
+        <svg className="logo" viewBox="0 0 295 197" aria-hidden>
+          <defs>
+            <clipPath id="logo-a"><circle cx="98" cy="98.5" r="98" /></clipPath>
+            <clipPath id="logo-b"><circle cx="98" cy="98.5" r="85" /></clipPath>
+          </defs>
+          <circle cx="98" cy="98.5" r="98" fill="#de484b" />
+          <circle cx="197" cy="98.5" r="98" fill="#359b73" />
+          <g clipPath="url(#logo-a)"><circle cx="197" cy="98.5" r="98" fill="#fff" /></g>
+          <g clipPath="url(#logo-b)"><circle cx="197" cy="98.5" r="85" fill="#f4c950" /></g>
+        </svg>
         <strong>PoCo / Polony Review</strong>
       </div>
       {mainView === 'experiment' && exp && (

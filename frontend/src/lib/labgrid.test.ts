@@ -38,10 +38,16 @@ describe('generateGrid', () => {
 });
 
 describe('defaultGrid', () => {
-  it('4x7 of 316px centred in a large landscape image', () => {
+  it('4x6 (24 fields) of 316px centred in a large landscape image', () => {
     const g = defaultGrid(2400, 1600);
-    expect([g.rows, g.cols, g.cellW]).toEqual([4, 7, 316]);
-    expect(g.originX).toBe(Math.round((2400 - 7 * 316) / 2));
+    expect([g.rows, g.cols, g.cellW]).toEqual([4, 6, 316]);
+    expect(g.originX).toBe(Math.round((2400 - 6 * 316) / 2));
+  });
+  it('the default grid never exceeds the 24 lab fields (portrait too)', () => {
+    for (const [w, h] of [[2400, 1600], [1460, 2438], [700, 400]]) {
+      const g = defaultGrid(w, h);
+      expect(g.rows * g.cols).toBeLessThanOrEqual(24);
+    }
   });
   it('shrinks cells to fit small images', () => {
     const g = defaultGrid(700, 400);

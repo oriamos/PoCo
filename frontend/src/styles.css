@@ -149,26 +149,9 @@ kbd {
   gap: 8px;
 }
 .logo {
-  position: relative;
-  width: 22px;
-  height: 14px;
-  display: inline-block;
-}
-.logo i {
-  position: absolute;
-  top: 1px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-.logo .r {
-  left: 0;
-  background: #e5484d;
-}
-.logo .g {
-  left: 8px;
-  background: #30a46c;
-  opacity: 0.85;
+  width: 27px;
+  height: 18px;
+  flex: none;
 }
 .crumb {
   display: flex;

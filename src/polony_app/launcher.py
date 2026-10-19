@@ -6,6 +6,9 @@
     python -m polony_app.launcher stop                       stop the background server
     python -m polony_app.launcher status                     print whether it runs, where, which data dir, shared database
     python -m polony_app.launcher set-database|clear-database  (hidden input) shared Neon/PostgreSQL database in config.json
+    python -m polony_app.launcher update [--check] [--ref NAME] [--force]
+                                                             update in place: newest release (or --ref), incremental git fetch,
+                                                             libraries already installed are kept; data and settings untouched
     python -m polony_app.launcher --self-test [--window]     start a throw-away server, GET /api/health and '/', stop
                                                              (--window: also open and close a native window; skipped without a display)
 
@@ -27,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import hashlib
 import json
 import platform
 import os
@@ -635,6 +639,105 @@ def cmd_prepare_model(model: str) -> int:
     return 0
 
 
+def _release_repo() -> str:
+    return os.environ.get("POLONY_REPO") or "oriamos/poco"
+
+
+def _http_get(url: str, timeout: float = 20.0) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": "polony-review-update"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def latest_release_tag() -> Optional[str]:
+    """Tag name of the newest GitHub release, or None when it cannot be determined (offline, rate limit)."""
+    try:
+        data = json.loads(_http_get(f"https://api.github.com/repos/{_release_repo()}/releases/latest"))
+        tag = data.get("tag_name")
+        return tag if isinstance(tag, str) and tag else None
+    except Exception:  # noqa: BLE001  any network / parse problem: caller asks for --ref
+        return None
+
+
+def _version_tuple(v: str) -> tuple:
+    out = []
+    for part in v.lstrip("v").split("."):
+        digits = "".join(ch for ch in part if ch.isdigit())
+        out.append(int(digits) if digits else 0)
+    return tuple(out)
+
+
+def _ai_installed() -> bool:
+    import importlib.util
+
+    try:
+        return importlib.util.find_spec("spotiflow") is not None and importlib.util.find_spec("torch") is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def cmd_update(ref: Optional[str], check: bool, force: bool) -> int:
+    """Update this installation in place by running the installer of the target ref.
+
+    The installer already does the incremental work (git fetch of one commit, pip skips libraries that are
+    already satisfied, the venv, config.json and the data folder are kept); this command only picks the ref,
+    downloads that ref's installer (verified against the release's SHA256SUMS.txt when there is one) and runs it.
+    """
+    from polony_app import __version__ as current
+
+    repo = _release_repo()
+    target = ref or latest_release_tag()
+    if not target:
+        print("Could not find out the newest release (no network?). Name one with --ref, e.g. --ref v0.3.1.")
+        return 1
+    is_release = target[:1] == "v" and target[1:2].isdigit()
+    if is_release and not force and _version_tuple(target) <= _version_tuple(current):
+        print(f"Polony Review {current} is up to date (newest release: {target}).")
+        return 0
+    print(f"Installed: {current}   Update to: {target}")
+    if check:
+        print("Run 'polony-review update' to install it.")
+        return 0
+
+    script = "install.ps1" if IS_WIN else "install.sh"
+    try:
+        body = _http_get(f"https://raw.githubusercontent.com/{repo}/{target}/install/{script}")
+    except Exception as e:  # noqa: BLE001
+        print(f"Could not download the installer for {target}: {e}")
+        return 1
+    if is_release:
+        try:
+            sums = _http_get(f"https://github.com/{repo}/releases/download/{target}/SHA256SUMS.txt").decode("utf-8", "replace")
+            want = next((ln.split()[0] for ln in sums.splitlines() if ln.split()[-1:] == [script]), None)
+        except Exception:  # noqa: BLE001
+            want = None
+        if want is None:
+            print(f"Note: no checksum list found for {target}; continuing without checking {script}.")
+        elif hashlib.sha256(body).hexdigest() != want.lower():
+            print(f"The downloaded {script} does not match the release checksum; not running it.")
+            return 1
+        else:
+            print(f"{script} matches the release checksum.")
+
+    ai = _ai_installed()
+    with tempfile.TemporaryDirectory(prefix="polony-update-") as tmp:
+        path = Path(tmp) / script
+        path.write_bytes(body)
+        if IS_WIN:
+            cmd = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(path),
+                   "-Ref", target, "-NoLaunch", "-WithAi" if ai else "-WithoutAi"]
+        else:
+            cmd = ["bash", str(path), "--ref", target, "--no-launch", "--with-ai" if ai else "--without-ai"]
+        env = dict(os.environ, POLONY_HOME=str(home_dir()))
+        log(f"update {current} -> {target}")
+        rc = subprocess.call(cmd, env=env)
+    if rc != 0:
+        print(f"The update failed (exit {rc}). Nothing else is broken: fix the message above and run it again.")
+        return rc
+    print("Updated. Start Polony Review from its icon (or run 'polony-review').")
+    return 0
+
+
 def configured_database_url(cfg: Optional[dict] = None) -> Optional[str]:
     cfg = load_config() if cfg is None else cfg
     u = (os.environ.get("POLONY_DATABASE_URL") or "").strip() or cfg.get("database_url")
@@ -775,8 +878,11 @@ def self_test(window: bool = False) -> int:
 
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="polony_app.launcher", description=__doc__.split("\n")[0])
-    ap.add_argument("command", nargs="?", default="launch", choices=["launch", "stop", "status", "set-database", "clear-database", "prepare-model"])
+    ap.add_argument("command", nargs="?", default="launch", choices=["launch", "stop", "status", "set-database", "clear-database", "prepare-model", "update"])
     ap.add_argument("--model", default="general", help="prepare-model: Spotiflow model name (default: general)")
+    ap.add_argument("--ref", default=None, help="update: release tag or branch to install (default: newest release)")
+    ap.add_argument("--check", action="store_true", help="update: only say whether a newer release exists")
+    ap.add_argument("--force", action="store_true", help="update: reinstall even when already up to date")
     ap.add_argument("--no-browser", action="store_true", help="start the server but do not open a browser")
     ap.add_argument("--browser", action="store_true", help="open the browser instead of the native window")
     ap.add_argument("--window", action="store_true", help="--self-test: also open and close a native window (skipped without a display)")
@@ -789,6 +895,8 @@ def main(argv: Optional[list[str]] = None) -> int:
             return cmd_stop()
         if a.command == "status":
             return cmd_status()
+        if a.command == "update":
+            return cmd_update(a.ref, a.check, a.force)
         if a.command == "prepare-model":
             return cmd_prepare_model(a.model)
         if a.command == "set-database":

@@ -140,3 +140,16 @@ def test_install_sh_clears_quarantine_on_venv_and_runs_check():
     sh = (INSTALL / "install.sh").read_text()
     assert 'xattr -dr com.apple.quarantine "$VENV"' in sh and "command -v xattr" in sh
     assert 'ai_extra.py" check' in sh
+
+
+def test_launcher_update_command(monkeypatch, capsys):
+    from polony_app import launcher
+
+    assert launcher._version_tuple("v0.3.1") > launcher._version_tuple("0.3.0")
+    monkeypatch.setattr(launcher, "latest_release_tag", lambda: "v0.0.1")
+    assert launcher.main(["update"]) == 0
+    assert "up to date" in capsys.readouterr().out
+    monkeypatch.setattr(launcher, "latest_release_tag", lambda: None)
+    assert launcher.main(["update"]) == 1
+    assert launcher.main(["update", "--check", "--ref", "v99.0.0"]) == 0
+    assert "Update to: v99.0.0" in capsys.readouterr().out

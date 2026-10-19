@@ -458,7 +458,7 @@ function GridGenerator() {
       {open && (
         <>
           <div className="muted small">
-            Creates counting regions named Field-N (field number N) on a rows × columns grid. Defaults assume a 4 × 7 grid of about 316 px cells centred on the image; check the preview against the picture. After Apply, click fields on the image to switch them on/off for counting.
+            Creates counting regions named Field-N (field number N) on a rows × columns grid. The lab template has fields 1–24, so the grid can have at most 24 cells (default 4 × 6 of about 316 px, centred on the image); check the preview against the picture. After Apply, click fields on the image to switch them on/off for counting.
           </div>
           <div className="form-grid">
             {num('Rows', 'rows', 1)}
@@ -500,7 +500,7 @@ function GridGenerator() {
           </div>
           {describeIssues(issues).length > 0 && (
             <div className="notice err small" role="alert" data-testid="grid-issues">
-              Cannot apply: {describeIssues(issues).join('; ')}.
+              Cannot apply or randomise: {describeIssues(issues).join('; ')}. Reduce rows × columns to 24 or fewer.
             </div>
           )}
           {outside > 0 && <div className="small warn-text">{outside} cell(s) extend beyond the image.</div>}

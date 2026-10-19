@@ -6,18 +6,18 @@ Polony Review is a local web app: it runs on **your own computer** and opens in 
 **Windows** (open *PowerShell*: Start menu, type `powershell`, Enter):
 
 ```powershell
-irm https://raw.githubusercontent.com/oriamos/poco/v0.3.0/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.ps1 | iex
 ```
 **macOS** (open *Terminal*: Cmd+Space, type `terminal`, Enter) **and Linux**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.0/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.sh | bash
 ```
 
-This installs the stable tagged release **v0.3.0**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
+This installs the stable tagged release **v0.3.1**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
 **Development version (unstable, testing only):** set `POLONY_REF=main` (Windows: `$env:POLONY_REF='main'`) before the command, or pass `-Ref main` to `install.ps1`. Any tag or branch name works.
 
-If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.3.0`):
+If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.3.1`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File install\install.ps1       # Windows
@@ -57,7 +57,14 @@ The icon opens Polony Review in its own window (no tabs or address bar) using th
 * Restarting or shutting down the computer also stops it.
 
 ## Update
-Run the same install command again. It stops the running app, fetches the newest code, updates the libraries and recreates the icons. Your data is untouched.
+From the terminal, no new download of the whole app:
+```bash
+~/PolonyReview/bin/polony-review update --check   # is there a newer release?
+~/PolonyReview/bin/polony-review update           # update (add --ref main for the unstable development branch)
+```
+On Windows: `& "$env:LOCALAPPDATA\PolonyReview\venv\Scripts\python.exe" -m polony_app.launcher update`. It fetches the newest release's installer (checked against the release's `SHA256SUMS.txt`), fetches only the changed code with git, and keeps the Python environment, the installed libraries (including the AI detector) and your settings. Re-running the install command from the README does the same.
+
+The install command does the same and works too: it stops the running app, fetches the newest code, updates the libraries and recreates the icons. Your data is untouched.
 
 ## Uninstall
 ```powershell
