@@ -44,7 +44,13 @@ irm https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.ps1 | 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.1/install/install.sh | bash
 ```
-It installs into your user folder (about 650 MB; downloads Python 3.12 only when no Python 3.10–3.13 is present) and adds a **PoCo / Polony Review** desktop icon. Run the same command again to update. Uninstalling keeps your data folder.
+It installs into your user folder (about 650 MB; downloads Python 3.12 only when no Python 3.10–3.13 is present) and adds a **PoCo / Polony Review** desktop icon. Uninstalling keeps your data folder.
+**Update** (no full re-download; libraries, AI detector, settings and data are kept), from version 0.3.1 on:
+```bash
+~/PolonyReview/bin/polony-review update --check   # is there a newer release?
+~/PolonyReview/bin/polony-review update
+```
+On Windows: `& "$env:LOCALAPPDATA\PolonyReview\venv\Scripts\python.exe" -m polony_app.launcher update`. An older installation updates once by running the install command again. Details: [docs/app/INSTALL.md](docs/app/INSTALL.md).
 **Safer alternative** (no script piped into a shell): download the script and the release's `SHA256SUMS.txt`, verify the checksum, read the script, run it.
 ```bash
 base=https://github.com/oriamos/poco/releases/download/v0.3.1
