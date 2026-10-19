@@ -12,6 +12,10 @@ from 0.1.0; while the major version is 0.x, minor releases may change behaviour 
   installed libraries (including the AI detector), settings and data are kept. `--check` only reports whether a newer release exists; `--force` reinstalls.
   The command first exists in this release, so v0.3.0 installations update once with the install command from the README.
 
+### Changed
+
+* **New PoCo logo** (red and green circles with a yellow overlap): app icons (Windows, macOS, Linux), the top bar, the browser tab icon and the README.
+
 ### Fixed
 
 * **Grid fields: Apply and Randomise were disabled out of the box.** The default grid had 28 cells (4 x 7) but the lab template ends at field 24, so both

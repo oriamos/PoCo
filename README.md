@@ -2,6 +2,8 @@
 [![Installers](https://github.com/oriamos/poco/actions/workflows/install-test.yml/badge.svg?branch=main)](https://github.com/oriamos/poco/actions/workflows/install-test.yml)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)
 
+<p align="center"><img src="docs/app/img/poco-logo.png" alt="PoCo" width="360"></p>
+
 # PoCo / Polony Review
 
 **PoCo turns two-channel microscope TIFFs into reviewed red, green and yellow polony counts. Big-FISH and Spotiflow propose detections; a researcher reviews each counting field; the application exports lab-ready CSV/Excel files with full provenance.**
