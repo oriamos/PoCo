@@ -10,7 +10,7 @@ import numpy as np
 if TYPE_CHECKING:  # pragma: no cover
     from polony_app.schemas import GridSpec
 
-MAX_FIELD = 24   # the lab template has columns Field1..Field24
+MAX_FIELD = 24   # the lab template has columns Field1..Field24: at most this many grid fields are counted
 
 
 @dataclass(frozen=True)
@@ -127,9 +127,7 @@ def spec_problem(spec: "GridSpec") -> Optional[str]:
         return "cell_w and cell_h must be > 0"
     if spec.first_index < 1:
         return "first_index must be >= 1"
-    last = spec.first_index + spec.rows * spec.cols - 1
-    if last > MAX_FIELD:
-        return f"field numbers {spec.first_index}..{last} exceed {MAX_FIELD} (the lab template ends at field {MAX_FIELD})"
+    # (no cap on the number of cells: the grid may cover the whole image; at most MAX_FIELD fields are COUNTED)
     if spec.seed is not None and not (0 <= spec.seed < 2**32):
         return "seed must be in 0..2^32-1"
     return None
@@ -170,3 +168,21 @@ def random_shift(spec: "GridSpec", width: int, height: int, seed: int) -> tuple[
     ux, uy = rng(), rng()
     return (_axis_shift(spec.origin_x, spec.cols, spec.cell_w, width, ux),
             _axis_shift(spec.origin_y, spec.rows, spec.cell_h, height, uy))
+
+
+def _inside(poly: Sequence[Sequence[float]], width: int, height: int, tol: float = 1.0) -> bool:
+    xs, ys = [p[0] for p in poly], [p[1] for p in poly]
+    return min(xs) >= -0.5 - tol and min(ys) >= -0.5 - tol and max(xs) <= width - 0.5 + tol and max(ys) <= height - 0.5 + tol
+
+
+def pick_fields(spec: "GridSpec", width: int, height: int, seed: int, limit: int = MAX_FIELD) -> set[int]:
+    """Field numbers to COUNT when the grid has more cells than the CSV has columns (or on Randomise): `limit` cells
+    drawn at random (seeded, reproducible) from the cells that lie fully on the image; edge cells that overhang the
+    image stay switched off unless the researcher turns them on. Every part of the image can be sampled."""
+    cells = spec_cells(spec)
+    pool = [fi for fi, _r, _c, poly in cells if _inside(poly, width, height)] or [fi for fi, *_ in cells]
+    rng = mulberry32(seed)
+    for i in range(len(pool) - 1, 0, -1):          # Fisher-Yates
+        j = min(i, int(rng() * (i + 1)))
+        pool[i], pool[j] = pool[j], pool[i]
+    return set(pool[:limit])

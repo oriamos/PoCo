@@ -19,7 +19,7 @@ import {
 } from '../lib/experiment';
 import { storedGridCells } from '../lib/labgrid';
 import { useApp } from '../state/store';
-import { EngineSelect, runSettings } from './ExperimentsList';
+import { EngineSelect, runSettings, SaveFolderField } from './ExperimentsList';
 import { StatusChip } from './LeftRail';
 import { Modal } from './Modal';
 
@@ -122,10 +122,12 @@ function ExpHeader({ e }: { e: ExperimentView }) {
   const [name, setName] = useState(e.name);
   const [notes, setNotes] = useState(e.notes);
   const [deleting, setDeleting] = useState(false);
+  const [saveDir, setSaveDir] = useState(e.save_dir ?? '');
   useEffect(() => {
     setName(e.name);
     setNotes(e.notes);
-  }, [e.id, e.name, e.notes]);
+    setSaveDir(e.save_dir ?? '');
+  }, [e.id, e.name, e.notes, e.save_dir]);
   const save = async (body: Parameters<typeof api.updateExperiment>[1]) => {
     try {
       setExperiment(await api.updateExperiment(e.id, body));
@@ -134,6 +136,7 @@ function ExpHeader({ e }: { e: ExperimentView }) {
       toast('error', `experiment: ${errText(err)}`);
       setName(e.name);
       setNotes(e.notes);
+      setSaveDir(e.save_dir ?? '');
     }
   };
   const engine: EngineChoice = (e.default_detection.engine as EngineChoice | undefined) ?? 'bigfish';
@@ -166,6 +169,12 @@ function ExpHeader({ e }: { e: ExperimentView }) {
         data-testid="exp-notes-edit"
         onChange={(ev) => setNotes(ev.target.value)}
         onBlur={() => notes !== e.notes && void save({ notes })}
+      />
+      <SaveFolderField
+        value={saveDir}
+        onChange={setSaveDir}
+        onCommit={(v) => v.trim() !== (e.save_dir ?? '') && void save({ save_dir: v.trim() || null })}
+        testid="exp-save-dir-edit"
       />
       <div className="row wrap small">
         <span className="muted">Run defaults:</span>

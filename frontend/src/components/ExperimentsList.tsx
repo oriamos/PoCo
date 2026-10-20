@@ -3,6 +3,7 @@ import { api, ApiError } from '../api/client';
 import type { DetectionRequest, EngineChoice, EngineInfo } from '../api/types';
 import { batchRequest } from '../lib/batch';
 import { experimentChip } from '../lib/experiment';
+import { nativeFolderAvailable, pickNativeFolder } from '../lib/nativePicker';
 import { useApp } from '../state/store';
 import { Modal } from './Modal';
 
@@ -99,6 +100,7 @@ function NewExperimentDialog({ onClose }: { onClose: () => void }) {
   const [notes, setNotes] = useState('');
   const [engine, setEngine] = useState<EngineChoice>('bigfish');
   const [fromCurrent, setFromCurrent] = useState(false);
+  const [saveDir, setSaveDir] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const submit = async () => {
@@ -106,7 +108,7 @@ function NewExperimentDialog({ onClose }: { onClose: () => void }) {
     setErr('');
     try {
       const det = fromCurrent && current ? runSettings(current.detection_request, engine) : batchRequest(engine);
-      const v = await api.createExperiment({ name: name.trim(), notes: notes.trim(), default_detection: { ...det, preview_window: null } });
+      const v = await api.createExperiment({ name: name.trim(), notes: notes.trim(), default_detection: { ...det, preview_window: null }, save_dir: saveDir.trim() || null });
       await refresh();
       onClose();
       await open(v.id);
@@ -134,6 +136,7 @@ function NewExperimentDialog({ onClose }: { onClose: () => void }) {
           Notes <span className="muted">(optional)</span>
           <textarea className="input" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} data-testid="exp-notes" />
         </label>
+        <SaveFolderField value={saveDir} onChange={setSaveDir} testid="exp-save-dir" />
         <label className="field-label">
           Detector for the unattended run
           <EngineSelect value={engine} onChange={setEngine} testid="exp-engine" />
@@ -166,5 +169,25 @@ function NewExperimentDialog({ onClose }: { onClose: () => void }) {
         </div>
       </form>
     </Modal>
+  );
+}
+
+/** "Save results to": chosen once per experiment; every slide's Save then writes there. Native window: a button; browser: a typed path. */
+export function SaveFolderField({ value, onChange, onCommit, testid }: { value: string; onChange: (v: string) => void; onCommit?: (v: string) => void; testid: string }) {
+  const native = nativeFolderAvailable();
+  return (
+    <div className="field-label">
+      Save results to <span className="muted">(one folder for every slide of this experiment)</span>
+      {native ? (
+        <div className="row wrap">
+          <button type="button" className="btn sm" onClick={async () => { const p = await pickNativeFolder(value); if (p) { onChange(p); onCommit?.(p); } }} data-testid={`${testid}-choose`}>
+            {value ? 'Choose another folder…' : 'Choose folder…'}
+          </button>
+          {value && <span className="mono small" data-testid={testid}>{value}</span>}
+        </div>
+      ) : (
+        <input className="input" value={value} onChange={(e) => onChange(e.target.value)} onBlur={() => onCommit?.(value)} placeholder="/path/to/folder (optional)" data-testid={testid} />
+      )}
+    </div>
   );
 }

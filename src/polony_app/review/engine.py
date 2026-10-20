@@ -714,12 +714,6 @@ def _h_region_inspected(tx: Tx, a: Analysis, p: dict, ts: str) -> None:
 
 def _h_accept_region(tx: Tx, a: Analysis, p: dict, ts: str) -> None:
     r = _region(a, _need(p, "region_id"))
-    if not r.inspected:
-        raise ReviewError(
-            "region_not_inspected",
-            f"region '{r.name}' must be marked as inspected before accepting its proposals",
-            409,
-        )
     n = 0
     for o in a.objects:
         if o.region_id == r.id and not o.deleted and o.cls != ObjectClass.uncertain and not o.reviewed:
@@ -1174,17 +1168,25 @@ def finalize_problems(x: "Analysis | AnalysisState") -> list[tuple[str, str]]:
         probs.append(("stale_detection", "detection is stale; re-run detection"))
     if a.provenance.detection_ran_at is None and not any(not o.deleted for o in a.objects):
         probs.append(("no_detection", "no detection has been run and there are no objects"))
-    unapproved = [r.name for r in counting if not r.approved]
-    if unapproved:
-        probs.append(("regions_not_approved", "regions not approved: " + ", ".join(unapproved)))
-    outdated = [
-        r.name for r in counting
-        if r.approved and r.approval_fingerprint != region_fingerprint(a, r)
-    ]
-    if outdated:
-        probs.append(("approval_outdated",
-                      "approval no longer matches the region content: " + ", ".join(outdated)))
     return probs
+
+
+def confirm_counting_regions(state: AnalysisState) -> int:
+    """Every counting region (selected grid field) counts as confirmed: there is no separate approval step for the
+    researcher. Marks them inspected + approved against their current content (what exports and the training data
+    read) and returns how many changed. Not an undoable review action; a no-op on a finalized analysis."""
+    a = state.analysis
+    if a.finalized_at is not None:
+        return 0
+    ts = now()
+    n = 0
+    for r in _counting(a):
+        fp = region_fingerprint(a, r)
+        if r.approved and r.inspected and r.approval_fingerprint == fp:
+            continue
+        r.inspected, r.approved, r.approved_at, r.approval_fingerprint = True, True, ts, fp
+        n += 1
+    return n
 
 
 def finalize(state: AnalysisState) -> ReviewAction:
@@ -1198,6 +1200,7 @@ def finalize(state: AnalysisState) -> ReviewAction:
             409,
             {"problems": [{"code": c, "message": m} for c, m in probs]},
         )
+    confirm_counting_regions(state)
     ts = now()
     a.finalized_at = ts
     a.updated_at = ts

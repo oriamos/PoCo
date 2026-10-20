@@ -77,17 +77,16 @@ export function TotalsTab() {
       <CompareSection />
       {nUnresolved > 0 && !final && (
         <div className="notice warn small" role="status" data-testid="uncertain-block">
-          <strong>{nUnresolved} uncertain object{nUnresolved > 1 ? 's' : ''} unresolved.</strong> They are not included in any colour total, and while any remain the affected regions cannot be
-          approved (nor the analysis finalized). Resolve each one (reclassify, confirm or delete) in the Review tab.{' '}
+          <strong>{nUnresolved} uncertain object{nUnresolved > 1 ? 's' : ''} unresolved.</strong> They are not included in any colour total. Resolve each one (reclassify, confirm or delete) in the Review tab.{' '}
           <button className="btn sm" onClick={() => patch({ rightTab: 'review' })}>
             Go to Review
           </button>
         </div>
       )}
       {final ? (
-        <div className="notice ok small">These are final, approved counts.</div>
+        <div className="notice ok small">These are final counts.</div>
       ) : (
-        <div className="notice warn small">DRAFT: counts change while you edit and are not final until every counting region is approved and the analysis is finalized.</div>
+        <div className="notice warn small">DRAFT: counts change while you edit and are not final until the analysis is finalized.</div>
       )}
       <ObjectEvidenceNote />
     </div>

@@ -17,7 +17,7 @@ A **polony** is a small fluorescent spot made by amplifying a single DNA molecul
 2. **Map channels**: confirm which channel is red and which is green. File names only suggest a role.
 3. **Choose fields**: generate the counting grid, click the fields to count, or randomise the grid (the seed is recorded).
 4. **Detect**: Big-FISH (classical) and, optionally, Spotiflow (AI) propose spots in each field.
-5. **Review and export**: approve each counting field, then export `experiment_counts.csv`, Excel workbooks in the lab's layout, and a provenance file.
+5. **Review and export**: review the counts, then export `experiment_counts.csv`, Excel workbooks in the lab's layout, and a provenance file.
 
 ## Try PoCo in 5 minutes
 Needs Python 3.10–3.13, `make` and a clone of this repository. The demo uses the synthetic slide in the repository; no laboratory data.
@@ -35,14 +35,14 @@ $env:PYTHONPATH='src'; .venv\Scripts\python -m polony_app --data-dir demo-data\a
 ```
 
 ## Install (one command, no administrator rights)
-Release **v0.3.2** (research software, see the status below). The installers download this tagged release, not the moving `main` branch.
+Release **v0.3.3** (research software, see the status below). The installers download this tagged release, not the moving `main` branch.
 **Windows** (PowerShell):
 ```powershell
-irm https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/oriamos/poco/v0.3.3/install/install.ps1 | iex
 ```
 **macOS / Linux** (Terminal):
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.3/install/install.sh | bash
 ```
 It installs into your user folder (about 650 MB; downloads Python 3.12 only when no Python 3.10–3.13 is present) and adds a **PoCo / Polony Review** desktop icon. Uninstalling keeps your data folder.
 **Update** (no full re-download; libraries, AI detector, settings and data are kept), from version 0.3.1 on:
@@ -53,7 +53,7 @@ It installs into your user folder (about 650 MB; downloads Python 3.12 only when
 On Windows: `& "$env:LOCALAPPDATA\PolonyReview\venv\Scripts\python.exe" -m polony_app.launcher update`. An older installation updates once by running the install command again. Details: [docs/app/INSTALL.md](docs/app/INSTALL.md).
 **Safer alternative** (no script piped into a shell): download the script and the release's `SHA256SUMS.txt`, verify the checksum, read the script, run it.
 ```bash
-base=https://github.com/oriamos/poco/releases/download/v0.3.2
+base=https://github.com/oriamos/poco/releases/download/v0.3.3
 curl -fsSLO $base/install.sh && curl -fsSLO $base/SHA256SUMS.txt
 grep ' install.sh$' SHA256SUMS.txt | sha256sum -c -     # macOS: ... | shasum -a 256 -c -    (must print: install.sh: OK)
 less install.sh
@@ -61,14 +61,14 @@ bash install.sh
 ```
 On Windows, download `install.ps1` and `SHA256SUMS.txt` from the same release page, compare `(Get-FileHash install.ps1 -Algorithm SHA256).Hash` with the `install.ps1` line of `SHA256SUMS.txt`, read the script, then run `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`.
 
-* **AI detector (Spotiflow + PyTorch, about 0.8–2.5 GB extra, plus the 47 MB fine-tuned model):** add `--with-ai` (`-WithAi` on Windows). The installer also downloads the fine-tuned model, checks its SHA-256 and makes it the default. Apple Silicon uses the GPU when available. Intel Macs: Big-FISH only.
+* **AI detector (Spotiflow + PyTorch, about 0.8–2.5 GB extra, plus the 47 MB fine-tuned model):** add `--with-ai` (`-WithAi` on Windows). The installer also downloads the fine-tuned model, checks its SHA-256 and makes it the default. Apple Silicon uses the GPU when available. Intel Macs: older PyTorch 2.2.2, CPU only.
 * Install, update, uninstall, troubleshooting: [docs/app/INSTALL.md](docs/app/INSTALL.md). Development branch (unstable, testing only): set `POLONY_REF=main` before running the installer.
 
 ## What the scientific results do and do not show
 * **Big-FISH** is the classical detector: deterministic, with background subtraction and a threshold.
 * **Spotiflow** is the optional AI detector. A fresh AI install uses the **shipped fine-tuned model** `ft-7e4c89cb-8edc09e3` by default (downscale 4, normaliser `valid_unsaturated`, threshold 0.3, applied automatically). The pretrained `general` model stays in the model picker; models you train and promote replace the default. The run record names the model by registry id and weights checksum.
 * **Agreement between two detectors is not ground truth.** Where they agree the count is more likely right; where they differ, a person decides.
-* **Human review remains required.** Nothing is final until a person approves the counting fields. **Training never runs automatically.** It only happens when you run the training command yourself.
+* **Human review remains required.** Nothing is final until a person finalizes the analysis. **Training never runs automatically.** It only happens when you run the training command yourself.
 * **The fine-tuned weights are a [release asset](https://github.com/oriamos/poco/releases/tag/model-ft-7e4c89cb-8edc09e3)**, not part of the git repository; the installer downloads and verifies them. The laboratory approved distribution. The licence of the *upstream pretrained* Spotiflow weights is still unconfirmed ([MODEL_CARD.md](MODEL_CARD.md)). What is and is not connected: [docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md).
 
 Results so far ([docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md)): an **exploratory evaluation on eight real slides with one annotator** (varies a lot from slide to slide; not validation), and a **fine-tuning run on saved historical data** (the shipped model) (test split: 1,980 crops from 97 groups). Agreement with the saved researcher marks, at a 10-pixel tolerance, each model at its own threshold:
@@ -84,8 +84,8 @@ Results so far ([docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md)): an **
 These numbers measure **agreement with saved marks, not accuracy** on new images. The model also **over-counts more** than the pretrained one (count bias +1.921 against +1.243 per field), so review every field. The original test images are not distributed, so the evaluation cannot be re-run.
 
 ## Status and limitations
-* **Status:** research software, release 0.3.2. Run end to end on real two-channel slides against the researcher's marks; accuracy is partial and the defaults are not final.
-* **Limitations:** pixel size is not applied to distances (everything is in image pixels unless you set it); the shipped model's evaluation is agreement with saved marks only and its base-weights licence is unconfirmed ([MODEL_CARD.md](MODEL_CARD.md)); Intel Macs support Big-FISH only; Apple Silicon Spotiflow falls back to CPU for unsupported operations.
+* **Status:** research software, release 0.3.3. Run end to end on real two-channel slides against the researcher's marks; accuracy is partial and the defaults are not final.
+* **Limitations:** pixel size is not applied to distances (everything is in image pixels unless you set it); the shipped model's evaluation is agreement with saved marks only and its base-weights licence is unconfirmed ([MODEL_CARD.md](MODEL_CARD.md)); Intel Macs run the AI detector on CPU with PyTorch 2.2.2 (untested on hardware); Apple Silicon Spotiflow falls back to CPU for unsupported operations.
 * **Test results** are in the CI badges above and the [CI workflow runs](https://github.com/oriamos/poco/actions). This README does not copy test counts, which go stale.
 
 ## Documentation

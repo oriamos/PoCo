@@ -25,12 +25,13 @@ grid, detect, review, finalize, save) uses the existing analysis endpoints.
 
 * `status`: `open` | `running` (a batch run of this experiment is active, on this or another computer).
 * `default_grid`: opaque JSON (the stage 1 `GridSpec`); stored and returned as given, never interpreted by the backend.
+* `save_dir`: folder the Save tab writes every slide of the experiment to (`null` = next to the original / ask per image). Must exist and be writable (422 `output_dir_missing` / `output_dir_readonly`); `""` or `null` clears it. `POST /analyses/{id}/save-slide` uses it when the request has no `output_dir`.
 * `default_detection`: the settings an unattended run uses for every slide without an override.
 
 ## Endpoints
 
 ### `POST /experiments`
-Body: `{"name": "Clade run 12", "notes": "T7 phage", "default_detection": {DetectionRequest}, "default_grid": {...}}`
+Body: `{"name": "Clade run 12", "notes": "T7 phage", "default_detection": {DetectionRequest}, "default_grid": {...}, "save_dir": "/path/to/folder"}`
 (only `name` is required). Returns the experiment view (as `GET /experiments/{eid}`). `422 invalid_name` for an empty
 name; `422 invalid_request` if `default_detection.preview_window` is set.
 
@@ -66,7 +67,7 @@ The experiment object plus `slides` (in experiment order) and `last_batch` (the 
 ```
 
 ### `PUT /experiments/{eid}`
-Body: any of `name`, `notes`, `default_detection`, `default_grid`. Only the keys present change; `"default_grid": null`
+Body: any of `name`, `notes`, `default_detection`, `default_grid`, `save_dir`. Only the keys present change; `"default_grid": null`
 clears it, `"default_detection": null` resets to defaults. Returns the experiment view. A change does not affect a
 batch that is already running.
 

@@ -108,8 +108,8 @@ export const api = {
   setGridField: (id: string, field_index: number, counted: boolean) =>
     request<Analysis>('PUT', `/analyses/${id}/grid-selection`, { field_index, counted }),
   putGrid: (id: string, body: GridRequest) => request<Analysis>('PUT', `/analyses/${id}/grid`, body),
-  saveSlide: (id: string, selections: SaveSelection[], output_dir?: string) =>
-    request<SaveSlideReport>('POST', `/analyses/${id}/save-slide`, { selections, output_dir: output_dir || null }),
+  saveSlide: (id: string, selections: SaveSelection[], output_dir?: string, file_name?: string) =>
+    request<SaveSlideReport>('POST', `/analyses/${id}/save-slide`, { selections, output_dir: output_dir || null, file_name: file_name || null }),
   setChannels: (id: string, mapping: { index: number; role: 'red' | 'green' | 'ignore' }[]) =>
     request<Analysis>('PUT', `/analyses/${id}/channels`, { mapping }),
   putRegions: (id: string, regions: Region[]) => request<Analysis>('PUT', `/analyses/${id}/regions`, { regions }),
@@ -156,13 +156,13 @@ export const api = {
 
   // ---- experiments (docs/app/EXPERIMENTS_API.md)
   listExperiments: () => request<ExperimentSummary[]>('GET', '/experiments'),
-  createExperiment: (body: { name: string; notes?: string; default_detection?: Partial<DetectionRequest>; default_grid?: ExperimentGrid | null }) =>
+  createExperiment: (body: { name: string; notes?: string; default_detection?: Partial<DetectionRequest>; default_grid?: ExperimentGrid | null; save_dir?: string | null }) =>
     request<ExperimentView>('POST', '/experiments', body),
   getExperiment: (eid: string) => request<ExperimentView>('GET', `/experiments/${eid}`),
   /** only the keys present change; default_grid: null clears it, default_detection: null resets it */
   updateExperiment: (
     eid: string,
-    body: Partial<{ name: string; notes: string; default_detection: Partial<DetectionRequest> | null; default_grid: ExperimentGrid | null }>,
+    body: Partial<{ name: string; notes: string; default_detection: Partial<DetectionRequest> | null; default_grid: ExperimentGrid | null; save_dir: string | null }>,
   ) => request<ExperimentView>('PUT', `/experiments/${eid}`, body),
   deleteExperiment: (eid: string, deleteSlides = false) =>
     request<ExperimentDeleteResult>('DELETE', `/experiments/${eid}${deleteSlides ? '?delete_slides=true' : ''}`),

@@ -36,12 +36,12 @@ Usual counting regions are the **grid fields** (below). You can also draw a **co
 
 ### Grid: click to select, Randomise
 
-Regions tab, **Generate grid…**: rows, columns, cell size, origin, numbering order, start corner. **Preview on image** shows the grid (dashed cyan) before anything is stored.
+Regions tab, **Generate grid…**: rows, columns, cell size, origin, numbering order, start corner. The default grid tiles the **whole image** (316 px cells from the top-left corner), so it can have more than 24 cells; at most 24 fields are counted (the CSV has Field1..Field24). **Preview on image** shows the grid (dashed cyan) before anything is stored.
 
-* **Apply** stores the grid with the analysis (survives a reload) and creates one counting region `Field-N` per cell. The tool switches to **Pick fields**: click a field to count it, click again to skip it (skipped = blank in the CSVs; counted with no polonies = 0). Counted fields: solid outline and number; skipped: dotted grey outline. Keys: **A** all, **N** none, **I** invert, **Esc** leaves the tool. A field fully inside an exclusion mask cannot be switched on.
-* **Randomise** keeps rows, columns and cell size and moves the whole grid to a random whole-pixel position inside the image. The seed is recorded (under *Grid fields* and in `provenance.json`) so the position can be reproduced. Ctrl+Z undoes it.
-* Applying again (or randomising) keeps each field's on/off choice by field number. A field that does not move keeps its approval; one that moves loses it, as with a hand edit. **Apply** always uses the origin in the form (no random shift).
-* **Remove grid** deletes the grid and its field regions; refused while a grid field is approved.
+* **Apply** stores the grid with the analysis (survives a reload) and creates one counting region `Field-N` per cell (a grid with more than 24 cells counts a seeded random selection of 24 cells that lie fully on the image; overhanging edge cells start switched off). The tool switches to **Pick fields**: click a field to count it, click again to skip it (skipped = blank in the CSVs; counted with no polonies = 0). Counted fields: solid outline and number; skipped: dotted grey outline. Keys: **A** all, **N** none, **I** invert, **Esc** leaves the tool. A field fully inside an exclusion mask cannot be switched on.
+* **Randomise** keeps the grid where it is and draws a new random selection of up to 24 counted fields (replacing your on/off choices). The seed is recorded (under *Grid fields* and in `provenance.json`) so the selection can be reproduced. On a grid with 24 cells or fewer every cell on the image is counted. Ctrl+Z undoes it.
+* Applying again (or randomising) keeps each field's on/off choice by field number. A field that does not move keeps its approval; one that moves loses it, as with a hand edit. **Apply** always uses the origin in the form.
+* **Remove grid** deletes the grid and its field regions; always possible (grid fields have no approval step).
 
 Rectangle and polygon tools stay available for exclusions and for slides without a grid.
 
@@ -104,17 +104,16 @@ Edited automatic objects get `origin = edited`; added ones `origin = manual`.
 The detector can miss real spots and the queue cannot show what was not detected. For each counting region:
 
 1. Press **H** to hide overlays; look at raw/processed channels (views 1-5, zoom) for real spots without a marker. Add them with the Add tool.
-2. Tick **"I inspected this region for omissions"**.
-3. Optional **Accept all proposals**: marks all non-deleted, non-uncertain objects of the region reviewed (refused until the region is marked inspected). It is a bulk confirmation; use it deliberately.
-4. Resolve every `uncertain` object (reclassify or delete).
+2. Optional **Accept all proposals**: marks all non-deleted, non-uncertain objects of the region reviewed. It is a bulk confirmation; use it deliberately.
+3. Resolve every `uncertain` object (reclassify or delete).
 
 ## 9. Approval
 
-**Approve region** requires: region inspected, zero unresolved `uncertain`, detection not stale and detection having run (or objects existing). Approval is bound to a fingerprint of the region polygon, overlapping exclusions, the ids/positions/classes of its objects, the channel roles and the alignment. **Any later change inside the region (add, move, delete, reclassify, merge, split, re-detection, region/exclusion edit, mapping or alignment change) clears its approval.** Un-approve is always possible. Undo that restores an identical state restores a valid approval.
+There is no approval step for the researcher: **every counting region (selected grid field) counts as confirmed**. When you **Save** or **Finalize**, the app marks the counting regions as inspected and approved against their current content (this is what the exports and the training data read). Any later change inside a region (add, move, delete, reclassify, merge, split, re-detection, region/exclusion edit, mapping or alignment change) clears that mark until the next Save or Finalize.
 
 ## 10. Finalize and reopen
 
-**Finish** tab: a checklist. **Finalize analysis** is enabled only when at least one counting region exists, every counting region is approved, the channel mapping is confirmed and the detection is not stale. After finalizing, all mutating actions return an error (`analysis_finalized`) and exports are labelled FINAL. **Reopen** returns to review: approvals are kept but each is cleared by the first edit inside its region; undo history is not restored. Finalize and reopen are logged.
+**Finish** tab: a checklist. **Finalize analysis** is enabled only when at least one counting region exists, the channel mapping is confirmed and the detection is not stale. After finalizing, all mutating actions return an error (`analysis_finalized`) and exports are labelled FINAL. **Reopen** returns to review: approvals are kept but each is cleared by the first edit inside its region; undo history is not restored. Finalize and reopen are logged.
 
 ![Finalized](img/09-finalized.png)
 
@@ -123,11 +122,11 @@ The detector can miss real spots and the queue cannot show what was not detected
 1. **Open from disk** (left rail) opens a TIFF in place, so the app knows its folder. (A dragged-in upload has no folder: the Save tab asks for an output folder.) Confirm the channel mapping.
 2. Create the grid (section 3), run detection, review and approve.
 3. **Save tab**:
-   * *What to count*: tick red only / green only / yellow (red + green). The CSV text is generated (`red, not yellow`, `yellow`, `red and yellow`, ...) and editable. **+ Count something else too** adds a row; each row becomes its own row in the experiment CSV.
-   * *Grid fields to count*: click a field to switch it off (bad area) or on. Off = blank in the CSV; counted with no polonies = 0. Numbers above 24 are not allowed (the lab template ends at Field24).
+   * *What to count*: tick red only / green only / yellow (red + green); each ticked colour becomes its own row. Optionally also tick a combined row (red + yellow together, green + yellow together). Every row also becomes its own row in the experiment CSV.
+   * *Grid fields to count*: click a field to switch it off (bad area) or on. Off = left out of the CSV; counted with no polonies = 0. The CSV lists the counted fields one by one (Field1, Field2, ...) in grid order, whatever their grid numbers are; at most 24 fields can be counted.
    * **Save** writes next to the original scan (`<name>` = file name without extension; the original is never modified):
      * `<name>_labeled.tif`: RGB scan with the grid, per-field counts and a ring around every counted object (orange red-only, cyan green-only, yellow yellow).
-     * `<name>.csv`: `SlideID, Total number of polonies, Field1 ... Field24`. With several rows: `<name>__<what-counted>.csv`, one per row.
+     * `<name>.csv`: `SlideID, Color, Total number of polonies, Field1 ... Field24`: one row per ticked colour (`Color` = red / green / yellow, or the combined text such as `red and yellow`), all in this one file.
      * `experiment_counts.csv` (one per folder): `Slide name, What counted, NofPol, NofGrids, Field1 ... Field24`. Saving the same slide + "what counted" again replaces its row; other slides are kept. An existing file with a different header is never overwritten.
    * Save does not require finalizing; uncertain objects are never counted; the report lists unapproved fields.
 
@@ -136,7 +135,7 @@ API: `GET /api/fs/list`, `POST /api/analyses/open-path`, `PUT /api/analyses/{id}
 ## 12. Experiments (many slides, one run overnight, one CSV)
 
 An **experiment** holds all slides of one run (it replaces the old *Batch upload* panel).
-1. **Create.** Left rail > **Experiments** > **+ New experiment**: name (e.g. `Clade run 12`), optional notes, and the detector for the night run (Big-FISH, or Hybrid / Spotiflow when the AI extra is installed). With an analysis open, tick *Use the detection parameters of the open analysis* to reuse its tuned thresholds.
+1. **Create.** Left rail > **Experiments** > **+ New experiment**: name (e.g. `Clade run 12`), optional notes, the **folder to save results to** (chosen once: every slide's Save then writes its labelled scan and CSVs there, no folder question per image; change it later in the experiment header), and the detector for the night run (Big-FISH, or Hybrid / Spotiflow when the AI extra is installed). With an analysis open, tick *Use the detection parameters of the open analysis* to reuse its tuned thresholds.
 2. **Import.** Drop all TIFFs anywhere on the experiment page (or click the drop box). One file = one slide, in file order. Unreadable files are listed with the reason; the others are imported.
 3. **Channel mapping.** **Open** the first slide, confirm red / green, return with **← experiment name**. **Copy the mapping of “slide” to N slides…** applies it to every slide with the same file layout (only if all files were scanned the same way). Slides imported later get the mapping automatically.
 4. **Grid for all slides.** On one slide, make the grid (Regions tab > Grid generator, click fields). On the experiment page the **Grid for all slides** box shows it as the *Template*: (a) **Apply to slides without grid**: copies it (rows, columns, cell size, position, skipped fields) to every slide without one. (b) **Apply to all slides…**: also replaces existing grids. It first says how many slides have a grid and how many have approved fields; a field keeps its approval only if it did not move. (c) **Randomise on all…**: moves each slide's grid to its own random position (fresh seed per slide; cell size and number never change). Hover a row's *Grid* cell for its seed; seeds are also in the provenance. (d) A slide whose image size differs from the template is flagged *grid may exceed image*. Finalized slides are never changed. The grid is stored in the experiment, so later slides get it with one click.

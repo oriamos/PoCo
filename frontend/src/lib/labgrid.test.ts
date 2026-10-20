@@ -38,21 +38,20 @@ describe('generateGrid', () => {
 });
 
 describe('defaultGrid', () => {
-  it('4x6 (24 fields) of 316px centred in a large landscape image', () => {
-    const g = defaultGrid(2400, 1600);
-    expect([g.rows, g.cols, g.cellW]).toEqual([4, 6, 316]);
-    expect(g.originX).toBe(Math.round((2400 - 6 * 316) / 2));
-  });
-  it('the default grid never exceeds the 24 lab fields (portrait too)', () => {
-    for (const [w, h] of [[2400, 1600], [1460, 2438], [700, 400]]) {
+  it('tiles the whole image with 316 px cells from the top-left corner', () => {
+    for (const [w, h] of [[2212, 1264], [2400, 1600], [1460, 2438], [700, 400]]) {
       const g = defaultGrid(w, h);
-      expect(g.rows * g.cols).toBeLessThanOrEqual(24);
+      expect([g.originX, g.originY]).toEqual([0, 0]);
+      expect(g.cols * g.cellW).toBeGreaterThanOrEqual(w);
+      expect(g.rows * g.cellH).toBeGreaterThanOrEqual(h);
+      expect((g.cols - 1) * g.cellW).toBeLessThan(w);
+      expect((g.rows - 1) * g.cellH).toBeLessThan(h);
     }
+    const g = defaultGrid(2212, 1264);
+    expect([g.rows, g.cols, g.cellW]).toEqual([4, 7, 316]);
   });
-  it('shrinks cells to fit small images', () => {
-    const g = defaultGrid(700, 400);
-    expect(g.cols * g.cellW).toBeLessThanOrEqual(700);
-    expect(g.rows * g.cellH).toBeLessThanOrEqual(400);
+  it('shrinks cells on small images', () => {
+    expect(defaultGrid(300, 200).cellW).toBe(100);
   });
 });
 
@@ -65,6 +64,7 @@ describe('exclusion coverage and issues', () => {
   });
   it('flags >24, duplicates, invalid', () => {
     const i = fieldIssues([1, 2, 2, 25, null, 0]);
+    expect(fieldIssues([30], Infinity).tooHigh).toEqual([]);
     expect(i.duplicates).toEqual([2]);
     expect(i.tooHigh).toEqual([25]);
     expect(i.invalid).toEqual([0]);

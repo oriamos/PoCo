@@ -764,7 +764,6 @@ function applyAction(a, type, p) {
       case 'accept_region': {
         const r = a.regions.find((x) => x.id === p.region_id);
         if (!r) throw new HttpError(404, 'region_not_found', 'region not found');
-        if (!r.inspected) throw new HttpError(409, 'not_inspected', 'Region has not been marked as inspected for omissions.');
         live(a).filter((o) => o.region_id === r.id && o.cls !== 'uncertain').forEach((o) => (o.reviewed = true));
         break;
       }
@@ -928,7 +927,7 @@ function batchView(eid) {
   for (const k of ['done', 'failed', 'cancelled', 'running', 'queued', 'pending', 'not_run', 'skipped']) summary[k] = slides.filter((x) => x.status === k).length;
   return { batch: b, slides, summary };
 }
-const EXP_KEYS = ['name', 'notes', 'default_detection', 'default_grid'];
+const EXP_KEYS = ['name', 'notes', 'default_detection', 'default_grid', 'save_dir'];
 function checkKeys(body, allowed) {
   const unk = Object.keys(body || {}).filter((k) => !allowed.includes(k));
   if (unk.length) throw new HttpError(422, 'unknown_fields', `unknown field(s): ${unk.join(', ')}`, { fields: unk });
@@ -1032,7 +1031,7 @@ async function handleExperiments(req, res, url, route, m) {
     if (!(b.name || '').trim()) throw new HttpError(422, 'invalid_name', 'the experiment needs a name');
     checkDetection(b.default_detection, 'default_detection');
     const id = (++store.seq).toString(16).padStart(12, '0');
-    store.experiments.set(id, { id, name: b.name.trim().slice(0, 120), notes: b.notes || '', created_at: now(), updated_at: now(), default_grid: b.default_grid ?? null, default_detection: b.default_detection ?? defReq(), status: 'open' });
+    store.experiments.set(id, { id, name: b.name.trim().slice(0, 120), notes: b.notes || '', created_at: now(), updated_at: now(), default_grid: b.default_grid ?? null, save_dir: b.save_dir || null, default_detection: b.default_detection ?? defReq(), status: 'open' });
     return send(res, 200, expView(id));
   }
   if (!(mt = route.match(/^\/experiments\/([^/]+)(\/.*)?$/))) throw new HttpError(404, 'not_found', `${m} ${route}`);
@@ -1047,6 +1046,7 @@ async function handleExperiments(req, res, url, route, m) {
       e.name = b.name.trim().slice(0, 120);
     }
     if ('notes' in b) e.notes = b.notes || '';
+    if ('save_dir' in b) e.save_dir = (b.save_dir || '').trim() || null;
     if ('default_detection' in b) {
       checkDetection(b.default_detection, 'default_detection');
       e.default_detection = b.default_detection ?? defReq();
@@ -1379,16 +1379,26 @@ async function handle(req, res) {
       spec.shift_dx = spec.shift_dx ?? 0;
       spec.shift_dy = spec.shift_dy ?? 0;
       if (!(spec.rows >= 1 && spec.cols >= 1 && spec.cell_w > 0 && spec.cell_h > 0 && spec.first_index >= 1)) throw new HttpError(422, 'invalid_grid', 'bad grid');
-      if (spec.first_index + spec.rows * spec.cols - 1 > 24) throw new HttpError(422, 'invalid_grid', 'field numbers exceed 24');
       if (body.randomise) {
         spec.seed = body.seed ?? Math.floor(Math.random() * 2 ** 31);
-        const rng = mulberry32(spec.seed);
-        const ux = rng(), uy = rng();
-        spec.shift_dx = axisShift(spec.origin_x, spec.cols, spec.cell_w, W, ux);
-        spec.shift_dy = axisShift(spec.origin_y, spec.rows, spec.cell_h, H, uy);
+        spec.shift_dx = 0;
+        spec.shift_dy = 0;
       }
       snapshot(a);
       const cells = gridCells(spec);
+      // more than 24 cells (or Randomise): a seeded random selection of 24 fully-inside cells is counted
+      let chosen = null;
+      if (body.randomise || cells.length > 24) {
+        spec.seed = spec.seed ?? Math.floor(Math.random() * 2 ** 31);
+        const inside = (c) => c.polygon.every(([x, y]) => x >= -1.5 && y >= -1.5 && x <= W + 0.5 && y <= H + 0.5);
+        const pool = cells.filter(inside).map((c) => c.fi);
+        const rng = mulberry32(spec.seed);
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.min(i, Math.floor(rng() * (i + 1)));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        chosen = new Set(pool.slice(0, 24));
+      }
       const own = new Set(cells.map((c) => c.fi));
       const byIdx = new Map();
       for (const r of fields) if (!byIdx.has(r.field_index)) byIdx.set(r.field_index, r);
@@ -1396,7 +1406,15 @@ async function handle(req, res) {
       const made = [];
       const off = [];
       for (const c of cells) {
-        const cur = byIdx.get(c.fi);
+        let cur = byIdx.get(c.fi);
+        if (chosen && (body.randomise || (!cur && !skIdx.has(c.fi)))) {
+          const on = chosen.has(c.fi);
+          if (on && skIdx.has(c.fi)) skIdx.delete(c.fi);
+          else if (!on && cur) {
+            cur = undefined;
+            skIdx.set(c.fi, { field_index: c.fi, name: `Field-${c.fi}`, polygon: c.polygon });
+          } else if (!on && !skIdx.has(c.fi)) skIdx.set(c.fi, { field_index: c.fi, name: `Field-${c.fi}`, polygon: c.polygon });
+        }
         if (cur) {
           const moved = JSON.stringify(cur.polygon) !== JSON.stringify(c.polygon);
           made.push(moved ? { ...cur, polygon: c.polygon, approved: false, approved_at: null, approval_fingerprint: null, inspected: false } : cur);
@@ -1540,10 +1558,10 @@ async function handle(req, res) {
       const cr = a.regions.filter((r) => r.kind === 'counting');
       const bl = [];
       if (!cr.length) bl.push('no counting region');
-      if (cr.some((r) => !r.approved)) bl.push('not all counting regions approved');
       if (!a.image.channels.every((c) => c.role_confirmed)) bl.push('channel mapping not confirmed');
       if (a.provenance.stale_detection) bl.push('detection is stale');
       if (bl.length) throw new HttpError(409, 'finalize_blocked', `Cannot finalize: ${bl.join('; ')}.`, { blockers: bl });
+      cr.forEach((r) => Object.assign(r, { inspected: true, approved: true, approved_at: now(), approval_fingerprint: 'fp-' + store.seq++ }));   // no approval step: finalizing confirms the regions
       a.status = 'finalized';
       a.finalized_at = now();
       return send(res, 200, refresh(a));

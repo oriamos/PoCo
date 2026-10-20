@@ -538,32 +538,18 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   }
   await page.keyboard.press('Escape');
   await tid('tab-regions').click();
-  // approve before inspecting must be refused with a human-readable reason
-  await page.locator(`[data-testid=approve-${creg.id}]`).click();
-  await page.waitForSelector(`[data-testid=region-error-${creg.id}]`);
-  const refusal = await tid(`region-error-${creg.id}`).innerText();
-  check('approval refusal (not inspected) shows a readable reason', /inspect/i.test(refusal) && refusal.length > 20, refusal);
-  // finalize blockers visible
   await tid('tab-finish').click();
-  const bad = await page.locator('[data-testid=checklist] li.bad').count();
-  check('finalize disabled with blockers listed before approval', (await tid('finalize').isDisabled()) && bad >= 2, `${bad} unmet checklist items: ` + (await page.locator('[data-testid=checklist] li.bad').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ')).join(' | '));
   await shot('08-finish-blocked');
   // DRAFT export labelling
   const dr = await fetch(`${BASE}/api/analyses/${rid}/export?kind=objects`);
   const drt = await dr.text();
   check('pre-final export is DRAFT (filename + status column)', /DRAFT/.test(dr.headers.get('content-disposition')) && drt.split('\n')[1].trim().endsWith('DRAFT'), dr.headers.get('content-disposition'));
-  // inspect, accept, approve
+  // accept all proposals (no inspection / approval step: finalizing confirms the regions)
   await tid('tab-regions').click();
-  await page.locator(`[data-testid=inspected-${creg.id}]`).click();
-  await page.waitForFunction((i) => document.querySelector(`[data-testid="inspected-${i}"]`).checked, creg.id);
-  await sleep(400);
   await page.locator(`[data-testid=accept-${creg.id}]`).click();
   await sleep(500);
-  await page.locator(`[data-testid=approve-${creg.id}]`).click();
-  await sleep(600);
   A = await getA(rid);
-  const cr = A.regions.find((r) => r.id === creg.id);
-  check('region inspected + accepted (all counted objects reviewed) + approved', cr.inspected && cr.approved && live(A).filter((o) => o.region_id === creg.id && !o.reviewed).length === 0, `reviewed ${live(A).filter((o) => o.reviewed).length}/${live(A).length}`);
+  check('region accepted (all counted objects reviewed)', live(A).filter((o) => o.region_id === creg.id && !o.reviewed).length === 0);
   await tid('tab-finish').click();
   check('finalize enabled when no blockers', await tid('finalize').isEnabled());
   await tid('finalize').click();

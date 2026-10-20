@@ -83,7 +83,7 @@ def test_numbering_matches_frontend_rule():
 
 
 def test_invalid_specs_refused(client, aid):
-    assert put_grid(client, aid, grid={**SPEC, "first_index": 20}).json()["code"] == "invalid_grid"   # 20..25 > 24
+    assert put_grid(client, aid, grid={**SPEC, "first_index": 0}).json()["code"] == "invalid_grid"
     assert put_grid(client, aid, grid={**SPEC, "cell_w": 0}).json()["code"] == "invalid_grid"
     assert put_grid(client, aid, grid={**SPEC, "rows": 0}).json()["code"] == "invalid_grid"
     assert put_grid(client, aid, grid=SPEC, typo=1).json()["code"] == "unknown_fields"
@@ -130,10 +130,8 @@ def test_moved_field_loses_approval(client, aid, detector):
     assert sorted(g) == [1, 2, 3, 4]
     assert g[1]["approved"] and g[1]["id"] == f[1]["id"]
     assert not g[3]["approved"] and g[3]["id"] == f[3]["id"] and g[3]["polygon"][0] == [10, 50]
-    # clearing refuses while a grid field is approved, unless forced
-    r = put_grid(client, aid, grid=None)
-    assert r.status_code == 409 and r.json()["code"] == "grid_fields_approved" and r.json()["detail"]["fields"] == [1]
-    a = put_grid(client, aid, grid=None, force=True).json()
+    # clearing the grid is never refused because of approvals (there is no approval step for grid fields)
+    a = put_grid(client, aid, grid=None).json()
     assert fields(a) == {} and a["slide"]["grid"] is None
 
 
@@ -147,30 +145,44 @@ def test_clear_removes_grid_fields_only(client, aid):
     assert a["slide"]["grid"] is None and a["slide"]["skipped_fields"] == []
 
 
-def test_randomise_keeps_size_stays_inside_and_is_reproducible(client, aid):
+BIG = {"rows": 12, "cols": 16, "cell_w": 10, "cell_h": 10, "origin_x": 0, "origin_y": 0,
+       "order": "row-major", "corner": "tl", "first_index": 1}     # 192 cells tile the whole 160 x 120 image
+
+
+def test_grid_may_cover_the_whole_image_and_counts_24_random_fields(client, aid):
+    a = put_grid(client, aid, grid=BIG).json()
+    g = a["slide"]["grid"]
+    assert len(fields(a)) == 24 and len(a["slide"]["skipped_fields"]) == 192 - 24      # 24 counted, the rest switched off
+    assert isinstance(g["seed"], int) and (g["shift_dx"], g["shift_dy"]) == (0, 0)     # the grid does not move
+    cells = grid_mod.spec_cells(GridSpec(**BIG))
+    assert len(cells) == 192 and min(c[3][0][0] for c in cells) == 0 and max(c[3][2][0] for c in cells) == W
+    assert set(fields(a)) == grid_mod.pick_fields(GridSpec(**BIG), W, H, g["seed"])    # reproducible from the seed
+    # re-applying keeps the on/off choice; Randomise draws a new selection (same seed -> same selection)
+    again = put_grid(client, aid, grid=BIG).json()
+    assert set(fields(again)) == set(fields(a))
+    r1 = put_grid(client, aid, grid=BIG, randomise=True, seed=7).json()
+    r2 = put_grid(client, aid, grid=BIG, randomise=True, seed=7).json()
+    assert len(fields(r1)) == 24 and set(fields(r1)) == set(fields(r2)) == grid_mod.pick_fields(GridSpec(**BIG), W, H, 7)
+    assert set(fields(r1)) != set(fields(a)) and r1["slide"]["grid"]["seed"] == 7
+    assert set(fields(put_grid(client, aid, grid=BIG, randomise=True, seed=8).json())) != set(fields(r1))
+
+
+def test_overhanging_edge_cells_are_not_picked_automatically(client, aid):
+    spec = {**BIG, "rows": 4, "cols": 7, "cell_w": 30, "cell_h": 30}        # 7 x 30 = 210 > 160: two columns overhang
+    a = put_grid(client, aid, grid=spec).json()
+    assert len(fields(a)) == 20 and all((fi - 1) % 7 < 5 for fi in fields(a))    # 5 columns x 4 rows lie on the image
+    assert len(a["slide"]["skipped_fields"]) == 8                              # the 8 overhanging cells are off, not lost
+
+
+def test_randomise_on_a_small_grid_keeps_the_grid_in_place(client, aid):
     put_grid(client, aid, grid=SPEC)
     client.put(f"/api/analyses/{aid}/grid-selection", json={"field_index": 5, "counted": False})
     a = put_grid(client, aid, grid=SPEC, randomise=True, seed=1234).json()
     g = a["slide"]["grid"]
-    assert g["seed"] == 1234 and (g["rows"], g["cols"], g["cell_w"], g["cell_h"]) == (2, 3, 40, 40)
-    assert (g["origin_x"], g["origin_y"]) == (10, 10)                 # base origin kept, the shift is separate
-    assert (g["shift_dx"], g["shift_dy"]) == grid_mod.random_shift(GridSpec(**SPEC), W, H, 1234)
-    assert [s["field_index"] for s in a["slide"]["skipped_fields"]] == [5]   # on/off kept by field index
-    polys = [r["polygon"] for r in fields(a).values()] + [s["polygon"] for s in a["slide"]["skipped_fields"]]
-    assert len(polys) == 6
-    for p in polys:
-        xs, ys = [q[0] for q in p], [q[1] for q in p]
-        assert max(xs) - min(xs) == 40 and max(ys) - min(ys) == 40
-        assert min(xs) >= -0.5 and max(xs) <= W - 0.5 and min(ys) >= -0.5 and max(ys) <= H - 0.5
-    # same seed -> same shift; the server picks (and records) a seed when none is given
-    again = put_grid(client, aid, randomise=True, seed=1234).json()["slide"]["grid"]   # uses the stored spec
-    assert (again["shift_dx"], again["shift_dy"]) == (g["shift_dx"], g["shift_dy"])
-    auto = put_grid(client, aid, grid=SPEC, randomise=True).json()["slide"]["grid"]
-    assert isinstance(auto["seed"], int)
-    assert (auto["shift_dx"], auto["shift_dy"]) == grid_mod.random_shift(GridSpec(**SPEC), W, H, auto["seed"])
-    # undo restores the previous shift, regions and skipped fields together
+    assert g["seed"] == 1234 and (g["origin_x"], g["origin_y"], g["shift_dx"], g["shift_dy"]) == (10, 10, 0, 0)
+    assert sorted(fields(a)) == [1, 2, 3, 4, 5, 6]          # all six cells fit on the image: all are counted
     u = client.post(f"/api/analyses/{aid}/undo").json()
-    assert u["slide"]["grid"] == again and [s["field_index"] for s in u["slide"]["skipped_fields"]] == [5]
+    assert [s_["field_index"] for s_ in u["slide"]["skipped_fields"]] == [5]
 
 
 def test_random_shift_bounds_and_seeds():

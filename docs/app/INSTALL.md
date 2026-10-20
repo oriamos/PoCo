@@ -6,18 +6,18 @@ Polony Review is a local web app: it runs on **your own computer** and opens in 
 **Windows** (open *PowerShell*: Start menu, type `powershell`, Enter):
 
 ```powershell
-irm https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.ps1 | iex
+irm https://raw.githubusercontent.com/oriamos/poco/v0.3.3/install/install.ps1 | iex
 ```
 **macOS** (open *Terminal*: Cmd+Space, type `terminal`, Enter) **and Linux**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.3/install/install.sh | bash
 ```
 
-This installs the stable tagged release **v0.3.2**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
+This installs the stable tagged release **v0.3.3**, not the moving `main` branch. To check the installer first, verify its SHA-256 against the release's `SHA256SUMS.txt` (steps in the [README](../../README.md#install-one-command-no-administrator-rights)).
 **Development version (unstable, testing only):** set `POLONY_REF=main` (Windows: `$env:POLONY_REF='main'`) before the command, or pass `-Ref main` to `install.ps1`. Any tag or branch name works.
 
-If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.3.2`):
+If you cloned the repository (`git clone https://github.com/oriamos/poco`, `git checkout v0.3.3`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File install\install.ps1       # Windows
@@ -99,7 +99,10 @@ Interactively (terminal present, not CI) the installer asks *"Install the AI det
 | Windows, Linux (x86-64), no NVIDIA GPU | PyTorch **CPU** wheels from `download.pytorch.org/whl/cpu` | measured on Linux: venv 646 MB -> 1.8 GB |
 | Windows, Linux with an NVIDIA GPU (`nvidia-smi` found) | asks whether to use the **CUDA 12.6** build (`POLONY_AI_CUDA=1` for unattended) | about 2.5 GB or more |
 | macOS Apple Silicon | default PyPI wheels, uses the Apple GPU (MPS) when available; falls back to CPU automatically when an MPS op is missing | about 0.8 GB |
-| Intel Macs, Windows on ARM | not available (no current PyTorch wheels); Big-FISH keeps working | none |
+| Intel Macs | PyTorch 2.2.2 (last release for Intel Macs, CPU only, slower; needs Python 3.9-3.12) | none |
+| Windows on ARM | not available (no PyTorch wheels); Big-FISH keeps working | none |
+
+On an Apple Silicon Mac the installer skips Intel (x86_64) Pythons, such as an Intel miniconda running under Rosetta, and downloads a native arm64 Python instead, so the Apple GPU and current PyTorch work.
 
 `torch` and `torchvision` are installed **together as a matching, pinned pair** (torch 2.14.1 / torchvision 0.29.1; a mismatched torchvision breaks Spotiflow with `torchvision::nms does not exist`), then `spotiflow==0.6.5` (`install/extra-ai-requirements.txt`), then an import check that also calls a torchvision operator. If anything fails the installer says so and **Big-FISH still works**. The result is recorded as `"ai_enabled"` in `config.json`.
 

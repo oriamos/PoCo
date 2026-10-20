@@ -27,7 +27,7 @@ What went wrong, in one or two sentences.
 
 ## Environment
 
-- App version (see `pyproject.toml`, currently 0.3.2):
+- App version (see `pyproject.toml`, currently 0.3.3):
 - Install method (installer, or `make app` from a clone):
 - Operating system and version:
 - Python version (`python --version`):

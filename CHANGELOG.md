@@ -3,6 +3,43 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
+## 0.3.3 — the AI detector installs on Apple Silicon Macs with an Intel Python, and on Intel Macs (2026-10-20)
+
+### Fixed
+
+* **Installer: an Intel (x86_64) Python on an Apple Silicon Mac** (for example an Intel miniconda running under Rosetta) was mistaken for an Intel Mac, so
+  PyTorch was not installed and the AI detector failed with `No module named 'torch'`. On Apple Silicon, `install.sh` now skips Intel Pythons (also in an
+  existing environment) and downloads a native arm64 Python 3.12 with `uv` when none is found, so current PyTorch and the Apple GPU (MPS) are used.
+
+### Changed
+
+* **The grid covers the whole image.** The default grid tiles the entire scan with 316 px cells from the top-left corner (for example 7 × 4 = 28 cells on a
+  2212 × 1264 scan); a grid may have more than 24 cells. At most 24 fields are counted (the CSV has Field1..Field24): when the grid has more cells the app counts a
+  seeded random selection of 24 cells that lie fully on the image (overhanging edge cells start switched off), and **Randomise** now draws a new selection
+  instead of shifting the grid, so every part of the slide can be sampled. The seed is recorded; click fields to change the choice. Save refuses with a clear
+  message when more than 24 fields are on. The lab Excel export still needs field numbers 1-24.
+* **One save folder per experiment.** "New experiment" asks for the folder once (button in the desktop window, typed path in the browser; changeable in the experiment
+  header). Save on any slide of the experiment then writes there automatically and the Save tab no longer asks. `experiments.save_dir` (SQLite column added
+  automatically; Postgres schema version 4).
+* **No approval step.** Every counting region (selected grid field) counts as confirmed: the "I inspected this region" tick and the Approve / Unapprove
+  buttons are gone, and Finalize no longer asks for them. "Accept all proposals" works without the tick. Save and Finalize mark the regions inspected and
+  approved automatically, so exports and training data keep their flags. The grid can be cleared or re-applied at any time (it was refused while a field was
+  approved). The `approve_region` / `unapprove_region` / `region_inspected` actions still exist in the API.
+* **Save: one CSV row per colour, with a `Color` column.** Ticking red only, green only and yellow now gives a row for each (before, ticking several colours in one line
+  merged them into one combined row). `<name>.csv` is now `SlideID, Color, Total number of polonies, Field1 ... Field24` with one row per colour, in one file
+  (no more `<name>__<colour>.csv`). Combined rows (red + yellow, green + yellow together) are separate optional ticks. `experiment_counts.csv` keeps its columns
+  (`What counted` names the colour there).
+* **Save: "Choose folder and file name…" button** (desktop window): opens the system save window, where the researcher picks the folder and types the
+  file name (used for `<name>_labeled.tif` and `<name>.csv`; the "Slide name" in the CSVs stays the scan's name). In the browser the folder is still typed.
+* **CSV: counted grid fields are listed one by one.** `Field1, Field2, ...` are the counted fields in grid order, whatever their numbers in the grid are
+  (a switched-off field no longer leaves a blank column; grid numbers above 24 are fine as long as at most 24 fields are counted). The labelled scan keeps
+  the grid numbers.
+
+### Added
+
+* **AI detector on real Intel Macs:** installs PyTorch 2.2.2 / torchvision 0.17.2 (the last releases published for Intel Macs) with `numpy<2`; CPU only, slower.
+  Not yet tested on Intel hardware.
+
 ## 0.3.2 — one-click rejection of debris-like Big-FISH-only candidates (2026-10-19)
 
 ### Added

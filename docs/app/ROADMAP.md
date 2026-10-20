@@ -27,7 +27,7 @@ accuracy; measured results are in [ALL_SLIDES_EVAL.md](ALL_SLIDES_EVAL.md) and [
 2. Per-slide detection overrides exist in the API but have no UI.
 3. The left-rail experiment chip updates live only while that experiment is open.
 4. "Pause after current slide" for an overnight run is not implemented (Cancel stops after the current slide).
-5. Intel Macs cannot install the AI extra (no current PyTorch wheels); Big-FISH works.
+5. Intel Macs run the AI extra on an older PyTorch (2.2.2, CPU only); untested on real hardware.
 6. The channel alignment estimate (`POST /analyses/{id}/alignment`) has no UI control.
 7. Model registry and promotion: the locked test set is checked at evaluation time, but promotion does not yet refuse a
    model whose evaluation did not cover the locked set; see [FINE_TUNING.md](FINE_TUNING.md).

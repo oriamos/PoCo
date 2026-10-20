@@ -383,6 +383,8 @@ export interface Experiment {
   default_grid: ExperimentGrid | null;
   default_detection: Partial<DetectionRequest>;
   status: ExperimentStatus;
+  /** folder Save writes every slide of the experiment to (null = ask per image / next to the original) */
+  save_dir?: string | null;
 }
 
 export interface ExperimentSummary extends Experiment {

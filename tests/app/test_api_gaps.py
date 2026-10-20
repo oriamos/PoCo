@@ -70,9 +70,6 @@ def test_refusal_messages_are_human_readable(client, tiff, detector):
     client.put(f"/api/analyses/{aid}/channels", json={"mapping": [{"index": 0, "role": "red"}, {"index": 1, "role": "green"}]})
     client.put(f"/api/analyses/{aid}/regions", json={"regions": [counting("c1", rect(5, 5, 155, 115)).model_dump(mode="json")]})
     detect(client, aid, detector, DETS())
-    r = client.post(f"/api/analyses/{aid}/finalize")
-    j = r.json()
-    assert r.status_code == 409 and "not approved" in j["message"] and j["detail"]["problems"]
     r = act(client, aid, "approve_region", region_id="c1")
     assert r.status_code == 409 and "inspected" in r.json()["message"]
     act(client, aid, "region_inspected", region_id="c1", inspected=True)

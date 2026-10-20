@@ -88,6 +88,7 @@ class CountSelectionBody(BaseModel):
 class SaveSlideBody(BaseModel):
     selections: list[CountSelectionBody]
     output_dir: Optional[str] = None
+    file_name: Optional[str] = None    # base name of the files; default: the scan's name
 
 
 class ChannelMap(BaseModel):
@@ -161,6 +162,7 @@ class ExperimentBody(BaseModel):
     notes: Optional[str] = None
     default_detection: Optional[DetectionRequest] = None
     default_grid: Optional[dict] = None       # opaque grid spec (stage 1), stored as given
+    save_dir: Optional[str] = None            # folder Save writes every slide of the experiment to
 
 
 class ExperimentUpdateBody(BaseModel):
@@ -169,6 +171,7 @@ class ExperimentUpdateBody(BaseModel):
     notes: Optional[str] = None
     default_detection: Optional[DetectionRequest] = None
     default_grid: Optional[dict] = None
+    save_dir: Optional[str] = None            # null / "" clears it
 
 
 class ExperimentSlidesBody(BaseModel):
@@ -529,8 +532,9 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
         """Store the counting-grid spec and (re)create the lab field regions from it in one undoable step.
         Per field index: a field that was switched off stays off (its geometry in slide.skipped_fields follows the
         grid), a field that exists keeps its region id, so its approval survives only if its polygon did not move
-        (approval fingerprint). randomise=true: the server shifts the whole grid to a random position inside the
-        image (cell size and count unchanged) and records the seed. grid=null: removes the grid."""
+        (approval fingerprint). A grid with more than 24 cells (it may cover the whole image) counts a random
+        selection of 24 of them; randomise=true draws a new selection (the grid itself does not move). The seed is
+        recorded in the spec, so the selection is reproducible. grid=null: removes the grid."""
         from polony_app.fields import grid as grid_mod
         from polony_app.schemas import RegionKind, SkippedField
 
@@ -547,11 +551,6 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
                 if a.slide.grid is None:
                     return _respond(st)
                 own = {fi for fi, *_ in grid_mod.spec_cells(a.slide.grid)}
-                approved = sorted(r.field_index for r in fields if r.field_index in own and r.approved)
-                if approved and not body.force:
-                    return err(409, "grid_fields_approved",
-                               f"approved grid field(s) {', '.join(map(str, approved))}: unapprove them first "
-                               "(or pass force=true)", {"fields": approved})
                 engine.set_regions(st, [r for r in fields if r.field_index not in own] + others, {
                     "grid": None, "skipped_fields": [s_ for s_ in a.slide.skipped_fields if s_.field_index not in own]})
                 return _respond(st)
@@ -570,9 +569,18 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
                 import secrets
 
                 spec.seed = body.seed if body.seed is not None else secrets.randbelow(2**31)
-                spec.shift_dx, spec.shift_dy = grid_mod.random_shift(spec, a.image.width, a.image.height, spec.seed)
+                spec.shift_dx = spec.shift_dy = 0.0
             cells = grid_mod.spec_cells(spec)
             own = {fi for fi, *_ in cells}
+            # which cells are counted: all of them (<= 24 cells); else a seeded random selection of 24. Randomise
+            # redraws the selection for every cell; otherwise only cells with no earlier on/off choice take it.
+            chosen: Optional[set] = None
+            if a.image is not None and (body.randomise or len(cells) > grid_mod.MAX_FIELD):
+                if spec.seed is None:
+                    import secrets
+
+                    spec.seed = secrets.randbelow(2**31)
+                chosen = grid_mod.pick_fields(spec, a.image.width, a.image.height, spec.seed)
             by_index: dict[int, Region] = {}
             for r in fields:
                 by_index.setdefault(r.field_index, r)          # a duplicated field number: the first one is kept
@@ -582,6 +590,17 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             new_skipped: list[SkippedField] = []
             for fi, _r, _c, poly in cells:
                 cur = by_index.get(fi)
+                known = cur is not None or fi in skipped
+                if chosen is not None and (body.randomise or not known):
+                    want_on = fi in chosen
+                    if want_on and fi in skipped:
+                        skipped.pop(fi)                                   # becomes a counted field again
+                    elif not want_on and cur is not None:
+                        by_index.pop(fi)
+                        cur = None
+                        skipped[fi] = SkippedField(field_index=fi, name=f"Field-{fi}", polygon=[tuple(p) for p in poly])
+                    elif not want_on and fi not in skipped:
+                        skipped[fi] = SkippedField(field_index=fi, name=f"Field-{fi}", polygon=[tuple(p) for p in poly])
                 if cur is not None:
                     grid_regions.append(Region(id=cur.id, kind=RegionKind.counting, name=cur.name, field_index=fi,
                                                polygon=[tuple(p) for p in poly]))
@@ -611,12 +630,19 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             classes = ss.parse_classes(c.classes)
             label = (c.label or "").strip() or ss.default_label(classes)
             sels.append((label, classes))
-        with store.view(aid_ok(aid)) as st:
+        with store.edit(aid_ok(aid)) as st:
             a = st.analysis
-            out_dir = ss.resolve_output_dir(a, body.output_dir)
+            chosen = body.output_dir
+            if not chosen and a.experiment_id:   # the experiment's folder, picked once when it was created
+                try:
+                    chosen = store.get_experiment(a.experiment_id).save_dir
+                except ReviewError:
+                    chosen = None
+            out_dir = ss.resolve_output_dir(a, chosen)
             ss.count_fields(a, ss.COUNTABLE)   # refuses early when no grid field is selected
+            engine.confirm_counting_regions(st)   # selected grid fields count as confirmed (no approval step)
             red, green = images.raw_pair(st)
-            report = ss.save_slide(a, red, green, sels, out_dir)
+            report = ss.save_slide(a, red, green, sels, out_dir, body.file_name)
         return report
 
     @api.get("/analyses")
@@ -1570,6 +1596,18 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             return err(422, "invalid_request", f"{where}.preview_window is not a run setting")
         return None
 
+    def _clean_save_dir(v: Optional[str]):
+        """(folder or None, error response or None): the experiment's save folder must exist and be writable."""
+        v = (v or "").strip()
+        if not v:
+            return None, None
+        p = Path(v).expanduser()
+        if not p.is_dir():
+            return None, err(422, "output_dir_missing", f"folder does not exist: {p}")
+        if not os.access(p, os.W_OK):
+            return None, err(422, "output_dir_readonly", f"no permission to write in: {p}")
+        return str(p), None
+
     @api.post("/experiments")
     def post_experiment(body: ExperimentBody, raw: Any = Depends(_raw_body)):
         unk = unknown_keys(ExperimentBody, raw)
@@ -1581,9 +1619,12 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
         bad = _check_detection(body.default_detection, (raw or {}).get("default_detection"), "default_detection")
         if bad is not None:
             return bad
+        save_dir, bad = _clean_save_dir(body.save_dir)
+        if bad is not None:
+            return bad
         ts = engine.now()
         e = Experiment(id=new_id(), name=name[:120], created_at=ts, updated_at=ts, notes=body.notes or "",
-                       default_grid=body.default_grid,
+                       default_grid=body.default_grid, save_dir=save_dir,
                        default_detection=body.default_detection or DetectionRequest())
         store.create_experiment(e)
         return _experiment_view(e.id)
@@ -1629,6 +1670,10 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             e.default_detection = body.default_detection or DetectionRequest()
         if "default_grid" in given:
             e.default_grid = body.default_grid      # null clears it
+        if "save_dir" in given:
+            e.save_dir, bad = _clean_save_dir(body.save_dir)
+            if bad is not None:
+                return bad
         e.updated_at = engine.now()
         store.save_experiment(e)
         return _experiment_view(eid)

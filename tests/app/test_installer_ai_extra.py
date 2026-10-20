@@ -40,10 +40,12 @@ def test_cuda_only_with_gpu_and_not_when_declined():
     assert ai.plan("Linux", "x86_64", False, "yes")["index_url"] == ai.CPU_INDEX  # no GPU: CPU build whatever is asked
 
 
-def test_macos_pypi_for_apple_silicon_and_unsupported_intel():
+def test_macos_pypi_for_apple_silicon_and_intel_pinned_to_last_torch():
     p = ai.plan("Darwin", "arm64", False)
     assert p["supported"] and p["index_url"] is None and p["device"] == "mps"
-    assert not ai.plan("Darwin", "x86_64", False)["supported"]
+    intel = ai.plan("Darwin", "x86_64", False)
+    assert intel["supported"] and "torch==2.2.2" in intel["pins"] and "numpy<2" in intel["pins"]
+    assert "numpy<2" in ai.pip_commands(intel)[1]
     assert not ai.plan("Windows", "ARM64", False)["supported"]
     assert ai.plan("Linux", "aarch64", False)["index_url"] is None
 

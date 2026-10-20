@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Polony Review installer for macOS and Linux. No admin rights, never uses sudo.
 #
-#   curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.2/install/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/oriamos/poco/v0.3.3/install/install.sh | bash
 #
 # Re-running it updates the installation. Options (after `bash -s --` when piped):
 #   --dry-run        print what would be done, change nothing
 #   --no-launch      do not start the app at the end
 #   --with-ai        also install the optional AI detector (Spotiflow + PyTorch, 0.8-2.5 GB); --without-ai never asks
-#   --ref NAME       git tag or branch to install (default: v0.3.2, the stable release; main is the unstable development branch)
+#   --ref NAME       git tag or branch to install (default: v0.3.3, the stable release; main is the unstable development branch)
 #   --python PATH    use this Python (3.10-3.13) instead of searching / downloading one
 # Environment: POLONY_HOME (default ~/PolonyReview), POLONY_DATA_DIR (default ~/PolonyReviewData),
 #   POLONY_SOURCE (local checkout to copy instead of downloading from GitHub), POLONY_REPO, POLONY_REF,
@@ -23,7 +23,7 @@ set -euo pipefail
 main() {
   REPO="${POLONY_REPO:-oriamos/poco}"
   # the stable release by default; POLONY_REF=main installs the unstable development branch
-  REF="${POLONY_REF:-v0.3.2}"
+  REF="${POLONY_REF:-v0.3.3}"
   PH="${POLONY_HOME:-$HOME/PolonyReview}"
   DATA="${POLONY_DATA_DIR:-$HOME/PolonyReviewData}"
   DRY=0; NO_LAUNCH=0; PY_ARG=""; SHORTCUTS_ONLY=0; WITH_AI=""
@@ -104,7 +104,7 @@ main() {
         fi
       fi
       have curl || die "curl is needed to download the app (it ships with macOS and most Linux systems)"
-      # a release tag (v0.3.2, ...) is downloaded from refs/tags, anything else from a branch (main, ...)
+      # a release tag (v0.3.3, ...) is downloaded from refs/tags, anything else from a branch (main, ...)
       local kind=heads; case "$REF" in v[0-9]*) kind=tags ;; esac
       local url="https://github.com/$REPO/archive/refs/$kind/$REF.tar.gz"
       say "  downloading $url"
@@ -121,7 +121,12 @@ main() {
 
     # ---------------------------------------------------------------- 2. python + venv
     step 2 "Preparing Python (3.10-3.13) and a private virtual environment in $VENV"
-    py_ok() {  # $1 = interpreter; prints its version when it is 3.10-3.13
+    # Apple Silicon hardware (also true inside a Rosetta shell): an Intel (x86_64) Python there would get no PyTorch/GPU
+    apple_silicon() { [ "${POLONY_FORCE_OS:-$(uname -s)}" != linux ] && [ "$(uname -s)" = Darwin ] && [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; }
+    py_ok() {  # $1 = interpreter; prints its version when it is 3.10-3.13 (and native arm64 on Apple Silicon)
+      if apple_silicon; then
+        case "$("$1" -c 'import platform; print(platform.machine())' 2>/dev/null)" in arm64|aarch64) ;; *) return 1 ;; esac
+      fi
       "$1" -c 'import sys; v=sys.version_info[:2]; assert (3,10)<=v<=(3,13); print("%d.%d"%v)' 2>/dev/null
     }
     find_python() {
@@ -160,11 +165,13 @@ main() {
       if py="$(find_python)" && make_venv_with "$py"; then
         say "  using the Python $(py_ok "$py") found at $py"; return
       fi
+      apple_silicon && say "  (no native Apple Silicon Python found; Intel Pythons are skipped because they cannot use PyTorch's current builds or the GPU)"
       [ -n "${py:-}" ] && warn "could not create a virtual environment with $py (on Debian/Ubuntu 'python3-venv' is missing); using a downloaded Python instead"
       bootstrap_uv
       say "  Downloading a standalone Python 3.12 with uv (about 30 MB) ..."
       rm -rf "$VENV"
-      UV_PYTHON_INSTALL_DIR="$PH/python" "$UV" venv --seed --python 3.12 "$VENV" || die "uv could not set up Python 3.12"
+      local want=3.12; apple_silicon && want=cpython-3.12-macos-aarch64   # native build even when this shell runs under Rosetta
+      UV_PYTHON_INSTALL_DIR="$PH/python" "$UV" venv --seed --python "$want" "$VENV" || die "uv could not set up Python 3.12"
       "$VPY" -m pip --version >/dev/null 2>&1 || die "the virtual environment has no pip"
     }
     if [ "$DRY" = 1 ]; then
