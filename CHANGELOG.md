@@ -3,6 +3,17 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
+## 0.3.4 — training data saved with every Save (2026-10-20)
+
+### Added
+
+* **Save: "Also save training data" (ticked by default).** Save also builds the app's immutable dataset snapshot of the slide (crops of the counted fields from the
+  original scan at native resolution, labels after your corrections, `manifest.json` with the sha256 of every file) and copies it next to the results as
+  `training/<ds-version>/`; the same snapshot stays in the app's data folder for `python -m polony_app.ml train`. Identical content reuses the same snapshot.
+  Fields that cannot be used (unresolved `uncertain` objects, touching an exclusion mask, under 32 px) are skipped and the reason is shown. Slide identity is taken
+  from the file name with the warning recorded in the manifest. A failure never stops Save. API: `training: true` in `POST /analyses/{id}/save-slide`
+  (default false there), report key `training`.
+
 ## 0.3.3 — the AI detector installs on Apple Silicon Macs with an Intel Python, and on Intel Macs (2026-10-20)
 
 ### Fixed

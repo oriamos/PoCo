@@ -787,4 +787,6 @@ export interface SaveSlideReport {
   slide_id: string;
   warnings: string[];
   rows: { what_counted: string; nofpol: number; nofgrids: number; fields: Record<string, number> }[];
+  /** present when "also save training data" was ticked */
+  training?: { status: 'ok' | 'failed'; version: string | null; directory: string | null; crops: number; message: string };
 }

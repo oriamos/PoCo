@@ -11,6 +11,7 @@ import csv
 import io
 import os
 import re
+import shutil
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -276,3 +277,37 @@ def save_slide(a: Analysis, red: np.ndarray, green: np.ndarray, selections: list
     return {"directory": str(out_dir), "files": files, "slide_id": slide_id, "warnings": warnings,
             "rows": [{"what_counted": lab, "nofpol": sum(c.values()), "nofgrids": len(c),
                       "fields": {str(k): v for k, v in sorted(c.items())}} for lab, _cls, c in per_sel]}
+
+
+# ------------------------------------------------------------------ training data
+def export_training(store, data_dir, aid: str, out_dir: Path) -> dict:
+    """Build the immutable dataset snapshot of this slide (the app's own `ml` snapshot: crops of the counted fields from the
+    ORIGINAL scan at native resolution, labels after the researcher's corrections, manifest with sha256 of every file)
+    and copy it next to the saved results as <out_dir>/training/<version>/. Never raises: a failure is reported."""
+    notes: list[str] = []
+    try:
+        from polony_app.ml import dataset as ds
+        from polony_app.ml.common import MLError
+
+        opts = ds.BuildOptions(allow_unconfirmed_identity=True)   # the warning is recorded in the manifest
+        try:
+            plan = ds.build_snapshot(store, data_dir, [aid], opts, say=notes.append, dry_run=True)
+            version, crops = plan.version, len(plan.manifest.crops)
+        except MLError as e:      # identical content was built before: snapshots are immutable, reuse it
+            m = re.search(r"snapshot (ds-[0-9a-f]+) already exists", str(e))
+            if not m:
+                raise
+            version = m.group(1)
+            crops = len(ds.load_manifest(data_dir, version).crops)
+        src = ds.snapshot_path(data_dir, version)
+        if not src.exists():
+            ds.build_snapshot(store, data_dir, [aid], opts, say=lambda _m: None)
+        dest = Path(out_dir) / "training" / version
+        if not dest.exists():
+            shutil.copytree(src, dest)
+        return {"status": "ok", "version": version, "directory": str(dest), "crops": crops,
+                "message": f"{crops} training crop(s) in training/{version}"}
+    except Exception as e:  # training data must never make Save fail
+        why = [n.strip() for n in notes][-4:]
+        return {"status": "failed", "version": None, "directory": None, "crops": 0,
+                "message": "training data not written: " + str(e) + (" (" + "; ".join(why) + ")" if why else "")}

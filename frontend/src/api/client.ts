@@ -108,8 +108,8 @@ export const api = {
   setGridField: (id: string, field_index: number, counted: boolean) =>
     request<Analysis>('PUT', `/analyses/${id}/grid-selection`, { field_index, counted }),
   putGrid: (id: string, body: GridRequest) => request<Analysis>('PUT', `/analyses/${id}/grid`, body),
-  saveSlide: (id: string, selections: SaveSelection[], output_dir?: string, file_name?: string) =>
-    request<SaveSlideReport>('POST', `/analyses/${id}/save-slide`, { selections, output_dir: output_dir || null, file_name: file_name || null }),
+  saveSlide: (id: string, selections: SaveSelection[], output_dir?: string, file_name?: string, training = false) =>
+    request<SaveSlideReport>('POST', `/analyses/${id}/save-slide`, { selections, output_dir: output_dir || null, file_name: file_name || null, training }),
   setChannels: (id: string, mapping: { index: number; role: 'red' | 'green' | 'ignore' }[]) =>
     request<Analysis>('PUT', `/analyses/${id}/channels`, { mapping }),
   putRegions: (id: string, regions: Region[]) => request<Analysis>('PUT', `/analyses/${id}/regions`, { regions }),

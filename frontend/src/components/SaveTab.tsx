@@ -21,6 +21,7 @@ export function SaveTab() {
   const toast = useApp((s) => s.toast);
   const [outDir, setOutDir] = useState('');
   const [fileName, setFileName] = useState('');
+  const [training, setTraining] = useState(true);
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<SaveSlideReport | null>(null);
   const [error, setError] = useState('');
@@ -65,7 +66,7 @@ export function SaveTab() {
     setError('');
     setReport(null);
     try {
-      const r = await api.saveSlide(a.id, sel, outDir.trim() || undefined, fileName.trim() || undefined);
+      const r = await api.saveSlide(a.id, sel, outDir.trim() || undefined, fileName.trim() || undefined, training);
       setReport(r);
       toast('success', `Saved ${r.files.length} files to ${r.directory}`);
     } catch (e) {
@@ -155,6 +156,11 @@ export function SaveTab() {
         )}
       </section>
 
+      <label className="chk small" data-testid="save-training-row">
+        <input type="checkbox" checked={training} onChange={(e) => setTraining(e.target.checked)} data-testid="save-training" /> Also save training data (images + corrected points, an
+        immutable dataset snapshot in a <span className="mono">training</span> folder next to the results)
+      </label>
+
       {problems.length > 0 && (
         <div className="notice warn small" role="alert">
           {problems.join(' ')}
@@ -183,6 +189,17 @@ export function SaveTab() {
               {r.what_counted}: {r.nofpol} polonies in {r.nofgrids} fields
             </div>
           ))}
+          {report.training && (
+            <div className={report.training.status === 'ok' ? '' : 'warn-text'} data-testid="save-training-report">
+              Training data: {report.training.message}
+              {report.training.directory && (
+                <>
+                  {' '}
+                  (<span className="mono">{report.training.directory}</span>)
+                </>
+              )}
+            </div>
+          )}
           {report.warnings.map((w) => (
             <div key={w} className="warn-text">
               {w}

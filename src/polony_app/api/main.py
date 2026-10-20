@@ -89,6 +89,7 @@ class SaveSlideBody(BaseModel):
     selections: list[CountSelectionBody]
     output_dir: Optional[str] = None
     file_name: Optional[str] = None    # base name of the files; default: the scan's name
+    training: bool = False             # also write the dataset snapshot for training (<folder>/training/<version>/)
 
 
 class ChannelMap(BaseModel):
@@ -643,6 +644,8 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             engine.confirm_counting_regions(st)   # selected grid fields count as confirmed (no approval step)
             red, green = images.raw_pair(st)
             report = ss.save_slide(a, red, green, sels, out_dir, body.file_name)
+        if body.training:     # after the edit: the snapshot reads the saved (confirmed) state through the store
+            report["training"] = ss.export_training(store, data_dir, aid, out_dir)
         return report
 
     @api.get("/analyses")
