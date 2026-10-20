@@ -7,7 +7,7 @@ import pytest
 import tifffile
 from fastapi.testclient import TestClient
 
-from fakes import detector, obj, write_two_channel_tiff  # noqa: F401
+from fakes import counting, detector, obj, rect, write_two_channel_tiff  # noqa: F401
 from labhelp import field_region
 from polony_app.api.main import create_app
 from polony_app.export import slide_save as ss
@@ -33,7 +33,7 @@ def rows(path):
         return list(csv.reader(fh))
 
 
-def open_and_prepare(client, scan, detector, fields):
+def open_and_prepare(client, scan, detector, fields, big=False):
     """fields: {idx: (n_red, n_yellow)}; opens by path, maps channels, puts field regions, fake-detects."""
     r = client.post("/api/analyses/open-path", json={"path": str(scan)})
     assert r.status_code == 200, r.text
@@ -44,6 +44,10 @@ def open_and_prepare(client, scan, detector, fields):
     regs, objs = [], []
     for idx, (nr, ny) in fields.items():
         reg, x0, y0 = field_region(idx)
+        if big:   # 48 x 48 px field: large enough for a training crop (>= 32 px)
+            x0, y0 = 5 + (idx - 1) * 52, 5
+            reg = counting(f"f{idx}", rect(x0, y0, x0 + 48, y0 + 48), name=f"field {idx}")
+            reg.field_index = idx
         regs.append(reg.model_dump(mode="json"))
         objs += [obj(f"r{idx}_{k}", x0 + 1 + k % 12, y0 + 2, ObjectClass.red) for k in range(nr)]
         objs += [obj(f"y{idx}_{k}", x0 + 1 + k % 12, y0 + 8, ObjectClass.yellow) for k in range(ny)]
@@ -227,3 +231,18 @@ def test_experiment_save_folder_is_used_without_asking_per_image(client, scan_di
     assert (out / "AI_A.csv").exists() and (out / "experiment_counts.csv").exists() and not (scan_dir / "AI_A.csv").exists()
     # clearing the folder goes back to "next to the original"
     assert client.put(f"/api/experiments/{e.json()['id']}", json={"save_dir": None}).json()["save_dir"] is None
+
+
+def test_save_can_also_write_the_training_snapshot_next_to_the_results(client, scan_dir, detector):
+    aid = open_and_prepare(client, scan_dir / "AI_A.tif", detector, {1: (3, 2), 2: (1, 4)}, big=True)
+    body = {"selections": [{"classes": ["red"]}], "training": True}
+    rep = client.post(f"/api/analyses/{aid}/save-slide", json=body).json()
+    t = rep["training"]
+    assert t["status"] == "ok", t["message"]
+    root = scan_dir / "training" / t["version"]
+    assert (root / "manifest.json").exists() and (root / "points.csv").exists() and t["crops"] >= 1
+    # saving again with the same content reuses the same immutable snapshot (no error, same version)
+    again = client.post(f"/api/analyses/{aid}/save-slide", json=body).json()["training"]
+    assert again["status"] == "ok" and again["version"] == t["version"], again["message"]
+    # off by default in the API
+    assert "training" not in client.post(f"/api/analyses/{aid}/save-slide", json={"selections": [{"classes": ["red"]}]}).json()
