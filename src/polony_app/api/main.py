@@ -162,6 +162,7 @@ class ExperimentBody(BaseModel):
     notes: Optional[str] = None
     default_detection: Optional[DetectionRequest] = None
     default_grid: Optional[dict] = None       # opaque grid spec (stage 1), stored as given
+    save_dir: Optional[str] = None            # folder Save writes every slide of the experiment to
 
 
 class ExperimentUpdateBody(BaseModel):
@@ -170,6 +171,7 @@ class ExperimentUpdateBody(BaseModel):
     notes: Optional[str] = None
     default_detection: Optional[DetectionRequest] = None
     default_grid: Optional[dict] = None
+    save_dir: Optional[str] = None            # null / "" clears it
 
 
 class ExperimentSlidesBody(BaseModel):
@@ -609,7 +611,13 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             sels.append((label, classes))
         with store.edit(aid_ok(aid)) as st:
             a = st.analysis
-            out_dir = ss.resolve_output_dir(a, body.output_dir)
+            chosen = body.output_dir
+            if not chosen and a.experiment_id:   # the experiment's folder, picked once when it was created
+                try:
+                    chosen = store.get_experiment(a.experiment_id).save_dir
+                except ReviewError:
+                    chosen = None
+            out_dir = ss.resolve_output_dir(a, chosen)
             ss.count_fields(a, ss.COUNTABLE)   # refuses early when no grid field is selected
             engine.confirm_counting_regions(st)   # selected grid fields count as confirmed (no approval step)
             red, green = images.raw_pair(st)
@@ -1567,6 +1575,18 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             return err(422, "invalid_request", f"{where}.preview_window is not a run setting")
         return None
 
+    def _clean_save_dir(v: Optional[str]):
+        """(folder or None, error response or None): the experiment's save folder must exist and be writable."""
+        v = (v or "").strip()
+        if not v:
+            return None, None
+        p = Path(v).expanduser()
+        if not p.is_dir():
+            return None, err(422, "output_dir_missing", f"folder does not exist: {p}")
+        if not os.access(p, os.W_OK):
+            return None, err(422, "output_dir_readonly", f"no permission to write in: {p}")
+        return str(p), None
+
     @api.post("/experiments")
     def post_experiment(body: ExperimentBody, raw: Any = Depends(_raw_body)):
         unk = unknown_keys(ExperimentBody, raw)
@@ -1578,9 +1598,12 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
         bad = _check_detection(body.default_detection, (raw or {}).get("default_detection"), "default_detection")
         if bad is not None:
             return bad
+        save_dir, bad = _clean_save_dir(body.save_dir)
+        if bad is not None:
+            return bad
         ts = engine.now()
         e = Experiment(id=new_id(), name=name[:120], created_at=ts, updated_at=ts, notes=body.notes or "",
-                       default_grid=body.default_grid,
+                       default_grid=body.default_grid, save_dir=save_dir,
                        default_detection=body.default_detection or DetectionRequest())
         store.create_experiment(e)
         return _experiment_view(e.id)
@@ -1626,6 +1649,10 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             e.default_detection = body.default_detection or DetectionRequest()
         if "default_grid" in given:
             e.default_grid = body.default_grid      # null clears it
+        if "save_dir" in given:
+            e.save_dir, bad = _clean_save_dir(body.save_dir)
+            if bad is not None:
+                return bad
         e.updated_at = engine.now()
         store.save_experiment(e)
         return _experiment_view(eid)

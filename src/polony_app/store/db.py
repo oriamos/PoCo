@@ -56,12 +56,13 @@ CREATE INDEX IF NOT EXISTS raw_det_aid_idx ON raw_detections (analysis_id, engin
 CREATE INDEX IF NOT EXISTS raw_det_run_idx ON raw_detections (analysis_id, run_id);
 CREATE TABLE IF NOT EXISTS experiments (
   id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT, updated_at TEXT, notes TEXT,
-  default_grid TEXT, default_detection TEXT, status TEXT);
+  default_grid TEXT, default_detection TEXT, status TEXT, save_dir TEXT);
 """
 
 # Columns added after the first release (idempotent: added only when missing; old rows stay valid with NULL).
 COLUMN_MIGRATIONS = {
     "analyses": [("experiment_id", "TEXT"), ("order_in_experiment", "INTEGER")],
+    "experiments": [("save_dir", "TEXT")],
     "jobs": [("kind", "TEXT DEFAULT 'detect'"), ("parent_id", "TEXT"), ("experiment_id", "TEXT"), ("detail", "TEXT")],
 }
 POST_MIGRATION_INDEXES = """
@@ -98,7 +99,7 @@ def new_job(aid: str, kind: str, parent_id, experiment_id, detail, status: JobSt
 def experiment_args(e: Experiment) -> tuple:
     return (e.id, e.name, e.created_at, e.updated_at, e.notes,
             json.dumps(e.default_grid) if e.default_grid is not None else None,
-            e.default_detection.model_dump_json(), e.status.value)
+            e.default_detection.model_dump_json(), e.status.value, e.save_dir)
 
 
 def experiment_from_row(r) -> Experiment:
@@ -109,7 +110,7 @@ def experiment_from_row(r) -> Experiment:
     return Experiment(
         id=r["id"], name=r["name"], created_at=r["created_at"], updated_at=r["updated_at"],
         notes=r["notes"] or "", status=r["status"] or "open", default_grid=js(r["default_grid"]),
-        default_detection=js(r["default_detection"]) or {},
+        default_detection=js(r["default_detection"]) or {}, save_dir=r["save_dir"],
     )
 
 
@@ -446,14 +447,14 @@ class Store:
     # ----------------------------------------------------------- experiments
     def create_experiment(self, e: Experiment) -> Experiment:
         self._exec(
-            "INSERT INTO experiments (id,name,created_at,updated_at,notes,default_grid,default_detection,status)"
-            " VALUES (?,?,?,?,?,?,?,?)", experiment_args(e))
+            "INSERT INTO experiments (id,name,created_at,updated_at,notes,default_grid,default_detection,status,save_dir)"
+            " VALUES (?,?,?,?,?,?,?,?,?)", experiment_args(e))
         return e
 
     def save_experiment(self, e: Experiment) -> None:
         n = self._exec(
             "UPDATE experiments SET name=?,created_at=?,updated_at=?,notes=?,default_grid=?,default_detection=?,"
-            "status=? WHERE id=?", experiment_args(e)[1:] + (e.id,)).rowcount
+            "status=?,save_dir=? WHERE id=?", experiment_args(e)[1:] + (e.id,)).rowcount
         if not n:
             raise NotFound("experiment", e.id)
 

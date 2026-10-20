@@ -531,6 +531,7 @@ class Experiment(BaseModel):
     default_grid: Optional[dict] = None              # opaque grid spec (stage 1 GridSpec), applied by the grid tools
     default_detection: DetectionRequest = DetectionRequest()   # settings of an unattended run
     status: ExperimentStatus = ExperimentStatus.open
+    save_dir: Optional[str] = None                   # folder every slide of the experiment is saved to (Save tab)
 
 
 class ExperimentSummary(BaseModel):

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { nativeSaveAvailable, pickNativeSave } from '../lib/nativePicker';
 import { api, ApiError } from '../api/client';
 import type { CountClass, SaveSlideReport } from '../api/types';
@@ -27,7 +27,16 @@ export function SaveTab() {
   const problems = selectionProblems(sel);
   const fields = useMemo(() => gridFields(a), [a]);
   const counted = fields.filter((f) => f.counted).length;
-  const needDir = !src && !outDir.trim();
+  // the experiment's folder (picked once when the experiment was created); the server uses it when no folder is sent
+  const expId = a.experiment_id ?? null;
+  const [expDir, setExpDir] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    setExpDir(null);
+    if (expId) api.getExperiment(expId).then((e) => live && setExpDir(e.save_dir ?? null), () => undefined);
+    return () => { live = false; };
+  }, [expId]);
+  const needDir = !src && !outDir.trim() && !expDir;
   const native = nativeSaveAvailable();
   const defaultName = src ? (src.split(/[\\/]/).pop() ?? '').replace(/\.[^.]+$/, '') : a.name;
   const choose = async () => {
@@ -108,7 +117,11 @@ export function SaveTab() {
 
       <section>
         <h4>3. Where</h4>
-        {src && !outDir ? (
+        {expDir && !outDir ? (
+          <div className="small" data-testid="save-where">
+            Experiment folder: <span className="mono">{expDir}</span> <span className="muted">(set on the experiment page)</span>
+          </div>
+        ) : src && !outDir ? (
           <div className="small" data-testid="save-where">
             Next to the original: <span className="mono">{dirOf(src)}</span>
           </div>
@@ -120,7 +133,7 @@ export function SaveTab() {
         {native ? (
           <div className="row wrap">
             <button className="btn sm" onClick={() => void choose()} data-testid="save-choose">
-              {outDir || src ? 'Choose another folder and name…' : 'Choose folder and file name…'}
+              {outDir || src || expDir ? 'Choose another folder and name…' : 'Choose folder and file name…'}
             </button>
             {fileName && (
               <span className="small">
@@ -129,7 +142,7 @@ export function SaveTab() {
             )}
           </div>
         ) : (
-          !src && (
+          !src && !expDir && (
             <label className="small">
               This scan was uploaded, so its folder is unknown. Folder to save in:
               <input className="input sm" value={outDir} onChange={(e) => setOutDir(e.target.value)} placeholder="/path/to/folder" data-testid="save-outdir" />

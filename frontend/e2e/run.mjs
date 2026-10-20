@@ -1054,11 +1054,13 @@ async function experimentSuite() {
   await tid('exp-new').click();
   await tid('exp-name').fill('Night run');
   await tid('exp-notes').fill('T7 phage');
+  await tid('exp-save-dir').fill('/tmp/results');
   await tid('exp-create').click();
   await page.waitForSelector('[data-testid=experiment-page]');
   const [exp0] = await api('/experiments');
   check('New experiment creates it with the engine defaults and opens its page', exp0?.name === 'Night run' && exp0.default_detection.engine === 'bigfish' && exp0.default_detection.preview_window === null && (await st()).mainView === 'experiment', JSON.stringify(exp0?.default_detection));
   const eid = exp0.id;
+  check('New experiment stores the save folder chosen once', exp0.save_dir === '/tmp/results' && (await tid('exp-save-dir-edit').inputValue()) === '/tmp/results', String(exp0.save_dir));
   check('left rail lists the experiment with an "open" chip', (await tid(`exp-chip-${eid}`).innerText()) === 'open');
 
   // import 3 TIFFs (one named to fail in the engine) + a non-TIFF that is refused

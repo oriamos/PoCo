@@ -927,7 +927,7 @@ function batchView(eid) {
   for (const k of ['done', 'failed', 'cancelled', 'running', 'queued', 'pending', 'not_run', 'skipped']) summary[k] = slides.filter((x) => x.status === k).length;
   return { batch: b, slides, summary };
 }
-const EXP_KEYS = ['name', 'notes', 'default_detection', 'default_grid'];
+const EXP_KEYS = ['name', 'notes', 'default_detection', 'default_grid', 'save_dir'];
 function checkKeys(body, allowed) {
   const unk = Object.keys(body || {}).filter((k) => !allowed.includes(k));
   if (unk.length) throw new HttpError(422, 'unknown_fields', `unknown field(s): ${unk.join(', ')}`, { fields: unk });
@@ -1031,7 +1031,7 @@ async function handleExperiments(req, res, url, route, m) {
     if (!(b.name || '').trim()) throw new HttpError(422, 'invalid_name', 'the experiment needs a name');
     checkDetection(b.default_detection, 'default_detection');
     const id = (++store.seq).toString(16).padStart(12, '0');
-    store.experiments.set(id, { id, name: b.name.trim().slice(0, 120), notes: b.notes || '', created_at: now(), updated_at: now(), default_grid: b.default_grid ?? null, default_detection: b.default_detection ?? defReq(), status: 'open' });
+    store.experiments.set(id, { id, name: b.name.trim().slice(0, 120), notes: b.notes || '', created_at: now(), updated_at: now(), default_grid: b.default_grid ?? null, save_dir: b.save_dir || null, default_detection: b.default_detection ?? defReq(), status: 'open' });
     return send(res, 200, expView(id));
   }
   if (!(mt = route.match(/^\/experiments\/([^/]+)(\/.*)?$/))) throw new HttpError(404, 'not_found', `${m} ${route}`);
@@ -1046,6 +1046,7 @@ async function handleExperiments(req, res, url, route, m) {
       e.name = b.name.trim().slice(0, 120);
     }
     if ('notes' in b) e.notes = b.notes || '';
+    if ('save_dir' in b) e.save_dir = (b.save_dir || '').trim() || null;
     if ('default_detection' in b) {
       checkDetection(b.default_detection, 'default_detection');
       e.default_detection = b.default_detection ?? defReq();

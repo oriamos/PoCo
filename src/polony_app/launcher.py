@@ -448,6 +448,20 @@ class WindowApi:
         res = wv.windows[0].create_file_dialog(kind, allow_multiple=True, file_types=("TIFF images (*.tif;*.tiff)",))
         return [str(p) for p in (res or [])]
 
+    def pick_folder(self, directory: str = "") -> str:
+        """Native folder window; "" when cancelled."""
+        wv = self._wv
+        if not wv.windows:
+            return ""
+        kind = getattr(getattr(wv, "FileDialog", None), "FOLDER", None)
+        if kind is None:
+            kind = wv.FOLDER_DIALOG
+        kw = {"directory": directory} if directory and Path(directory).is_dir() else {}
+        res = wv.windows[0].create_file_dialog(kind, **kw)
+        if isinstance(res, (list, tuple)):
+            res = res[0] if res else ""
+        return str(res) if res else ""
+
     def pick_save(self, name: str = "", directory: str = "") -> dict:
         """Native "save as" window: the researcher picks the folder and types the file name.
         Returns {"folder", "name"} (name without extension) or {} when cancelled."""

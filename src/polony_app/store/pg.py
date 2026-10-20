@@ -50,7 +50,7 @@ from .db import BATCH_RESTART_ERROR, NotFound, experiment_args, experiment_from_
 
 JOB_STALE_SECONDS = 120.0       # a running job whose heartbeat is older than this is orphaned
 VIEW_TTL = 1.5                  # seconds a cached analysis may be served without a version check
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 MIGRATIONS: dict[int, list[str]] = {
     1: [
@@ -106,6 +106,9 @@ MIGRATIONS: dict[int, list[str]] = {
         "ALTER TABLE {s}.jobs ADD COLUMN IF NOT EXISTS detail jsonb",
         "CREATE INDEX IF NOT EXISTS jobs_parent_idx ON {s}.jobs (parent_id)",
         "CREATE INDEX IF NOT EXISTS jobs_experiment_idx ON {s}.jobs (experiment_id, kind)",
+    ],
+    4: [   # the folder an experiment's Save writes to (existing experiments: NULL = ask per image)
+        "ALTER TABLE {s}.experiments ADD COLUMN IF NOT EXISTS save_dir text",
     ],
 }
 
@@ -633,13 +636,13 @@ class PgStore:
 
     # ----------------------------------------------------------- experiments
     def create_experiment(self, e: Experiment) -> Experiment:
-        self._q(f"INSERT INTO {self._E} (id,name,created_at,updated_at,notes,default_grid,default_detection,status)"
-                " VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s)", experiment_args(e))
+        self._q(f"INSERT INTO {self._E} (id,name,created_at,updated_at,notes,default_grid,default_detection,status,save_dir)"
+                " VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s::jsonb,%s,%s)", experiment_args(e))
         return e
 
     def save_experiment(self, e: Experiment) -> None:
         n = self._q(f"UPDATE {self._E} SET name=%s,created_at=%s,updated_at=%s,notes=%s,default_grid=%s::jsonb,"
-                    "default_detection=%s::jsonb,status=%s WHERE id=%s", experiment_args(e)[1:] + (e.id,))
+                    "default_detection=%s::jsonb,status=%s,save_dir=%s WHERE id=%s", experiment_args(e)[1:] + (e.id,))
         if not n:
             raise NotFound("experiment", e.id)
 

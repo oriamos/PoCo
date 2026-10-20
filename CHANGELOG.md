@@ -13,6 +13,9 @@ from 0.1.0; while the major version is 0.x, minor releases may change behaviour 
 
 ### Changed
 
+* **One save folder per experiment.** "New experiment" asks for the folder once (button in the desktop window, typed path in the browser; changeable in the experiment
+  header). Save on any slide of the experiment then writes there automatically and the Save tab no longer asks. `experiments.save_dir` (SQLite column added
+  automatically; Postgres schema version 4).
 * **No approval step.** Every counting region (selected grid field) counts as confirmed: the "I inspected this region" tick and the Approve / Unapprove
   buttons are gone, and Finalize no longer asks for them. "Accept all proposals" works without the tick. Save and Finalize mark the regions inspected and
   approved automatically, so exports and training data keep their flags. The grid can be cleared or re-applied at any time (it was refused while a field was

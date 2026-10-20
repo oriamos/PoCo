@@ -198,3 +198,32 @@ def test_red_green_yellow_ticked_give_three_rows_with_a_color_column(client, sca
     assert slide[0][:3] == ["SlideID", "Color", "Total number of polonies"]
     assert [(r[0], r[1]) for r in slide[1:]] == [("AI_A", "red"), ("AI_A", "green"), ("AI_A", "yellow")]
     assert len(rows(scan_dir / "experiment_counts.csv")) == 4      # header + one row per colour
+
+
+def test_every_colour_row_has_the_same_fields_and_zero_not_blank(client, scan_dir, detector):
+    # field 1: 3 red + 2 yellow, field 2: 1 red + 4 yellow; no green anywhere
+    aid = open_and_prepare(client, scan_dir / "AI_A.tif", detector, {1: (3, 2), 2: (1, 4)})
+    body = {"selections": [{"classes": ["red"]}, {"classes": ["green"]}, {"classes": ["yellow"]}]}
+    assert client.post(f"/api/analyses/{aid}/save-slide", json=body).status_code == 200
+    slide = rows(scan_dir / "AI_A.csv")
+    red, green, yellow = slide[1], slide[2], slide[3]
+    assert [r[1] for r in (red, green, yellow)] == ["red", "green", "yellow"]
+    assert red[3:5] == ["3", "1"] and green[3:5] == ["0", "0"] and yellow[3:5] == ["2", "4"]   # green: 0, not blank
+    filled = [[i for i, v in enumerate(r[3:]) if v != ""] for r in (red, green, yellow)]
+    assert filled[0] == filled[1] == filled[2] == [0, 1]                                        # same fields in every row
+
+
+def test_experiment_save_folder_is_used_without_asking_per_image(client, scan_dir, detector, tmp_path):
+    aid = open_and_prepare(client, scan_dir / "AI_A.tif", detector, {1: (3, 0)})
+    out = tmp_path / "experiment_out"
+    out.mkdir()
+    bad = client.post("/api/experiments", json={"name": "Run", "save_dir": str(tmp_path / "nope")})
+    assert bad.status_code == 422 and bad.json()["code"] == "output_dir_missing"
+    e = client.post("/api/experiments", json={"name": "Run", "save_dir": str(out)})
+    assert e.status_code == 200 and e.json()["save_dir"] == str(out)
+    assert client.post(f"/api/experiments/{e.json()['id']}/slides", json={"analysis_ids": [aid]}).status_code == 200
+    r = client.post(f"/api/analyses/{aid}/save-slide", json={"selections": [{"classes": ["red"]}]})   # no output_dir
+    assert r.status_code == 200 and r.json()["directory"] == str(out.resolve())
+    assert (out / "AI_A.csv").exists() and (out / "experiment_counts.csv").exists() and not (scan_dir / "AI_A.csv").exists()
+    # clearing the folder goes back to "next to the original"
+    assert client.put(f"/api/experiments/{e.json()['id']}", json={"save_dir": None}).json()["save_dir"] is None

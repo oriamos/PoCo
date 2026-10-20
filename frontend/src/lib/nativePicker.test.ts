@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cleanPickedPaths, cleanSavePick, nativePickerAvailable, nativeSaveAvailable } from './nativePicker';
+import { cleanPickedPaths, cleanSavePick, nativeFolderAvailable, nativePickerAvailable, nativeSaveAvailable } from './nativePicker';
 
 describe('nativePicker', () => {
   it('is available only when the js_api exposes pick_files', () => {
@@ -26,5 +26,13 @@ describe('save picker helpers', () => {
     expect(cleanSavePick({})).toBeNull();
     expect(cleanSavePick({ folder: '/a', name: '' })).toBeNull();
     expect(cleanSavePick(null)).toBeNull();
+  });
+});
+
+describe('folder picker', () => {
+  it('is available only when the js_api exposes pick_folder', () => {
+    expect(nativeFolderAvailable(undefined)).toBe(false);
+    expect(nativeFolderAvailable({ pywebview: { api: { pick_save: async () => ({}) } } })).toBe(false);
+    expect(nativeFolderAvailable({ pywebview: { api: { pick_folder: async () => '/x' } } })).toBe(true);
   });
 });

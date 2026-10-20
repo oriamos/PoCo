@@ -156,13 +156,13 @@ export const api = {
 
   // ---- experiments (docs/app/EXPERIMENTS_API.md)
   listExperiments: () => request<ExperimentSummary[]>('GET', '/experiments'),
-  createExperiment: (body: { name: string; notes?: string; default_detection?: Partial<DetectionRequest>; default_grid?: ExperimentGrid | null }) =>
+  createExperiment: (body: { name: string; notes?: string; default_detection?: Partial<DetectionRequest>; default_grid?: ExperimentGrid | null; save_dir?: string | null }) =>
     request<ExperimentView>('POST', '/experiments', body),
   getExperiment: (eid: string) => request<ExperimentView>('GET', `/experiments/${eid}`),
   /** only the keys present change; default_grid: null clears it, default_detection: null resets it */
   updateExperiment: (
     eid: string,
-    body: Partial<{ name: string; notes: string; default_detection: Partial<DetectionRequest> | null; default_grid: ExperimentGrid | null }>,
+    body: Partial<{ name: string; notes: string; default_detection: Partial<DetectionRequest> | null; default_grid: ExperimentGrid | null; save_dir: string | null }>,
   ) => request<ExperimentView>('PUT', `/experiments/${eid}`, body),
   deleteExperiment: (eid: string, deleteSlides = false) =>
     request<ExperimentDeleteResult>('DELETE', `/experiments/${eid}${deleteSlides ? '?delete_slides=true' : ''}`),

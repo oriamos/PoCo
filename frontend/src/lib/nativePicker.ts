@@ -2,6 +2,7 @@
 export interface PywebviewApi {
   pick_files: () => Promise<unknown>;
   pick_save: (name: string, directory: string) => Promise<unknown>;
+  pick_folder: (directory: string) => Promise<unknown>;
 }
 
 declare global {
@@ -47,4 +48,16 @@ export function cleanSavePick(raw: unknown): SavePick | null {
 export async function pickNativeSave(name: string, directory: string): Promise<SavePick | null> {
   const api = window.pywebview?.api;
   return api && typeof api.pick_save === 'function' ? cleanSavePick(await api.pick_save(name, directory)) : null;
+}
+
+/** True only inside the native window, where `pick_folder` exists. */
+export function nativeFolderAvailable(w: MaybeWindow = typeof window === 'undefined' ? undefined : window): boolean {
+  return typeof w?.pywebview?.api?.pick_folder === 'function';
+}
+
+/** Native folder window; '' when cancelled or not in the native window. */
+export async function pickNativeFolder(directory = ''): Promise<string> {
+  const api = window.pywebview?.api;
+  const r = api && typeof api.pick_folder === 'function' ? await api.pick_folder(directory) : '';
+  return typeof r === 'string' ? r : '';
 }
