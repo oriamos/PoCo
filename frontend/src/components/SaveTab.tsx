@@ -2,10 +2,15 @@ import { useMemo, useState } from 'react';
 import { nativeSaveAvailable, pickNativeSave } from '../lib/nativePicker';
 import { api, ApiError } from '../api/client';
 import type { CountClass, SaveSlideReport } from '../api/types';
-import { COUNT_CLASSES, defaultLabel, dirOf, gridFields, selectionProblems } from '../lib/saveslide';
+import { COUNT_CLASSES, dirOf, gridFields, selectionProblems } from '../lib/saveslide';
 import { useApp } from '../state/store';
 
 const CLASS_TEXT: Record<CountClass, string> = { red: 'red only', green: 'green only', yellow: 'yellow (red + green)' };
+const ONE_COLOURS: CountClass[][] = COUNT_CLASSES.map((c) => [c]);
+const COMBOS: { classes: CountClass[]; text: string }[] = [
+  { classes: ['red', 'yellow'], text: 'red + yellow together' },
+  { classes: ['green', 'yellow'], text: 'green + yellow together' },
+];
 
 /** The researcher's Save: choose what to count, which grid fields count, then write the labelled scan + CSVs. */
 export function SaveTab() {
@@ -33,10 +38,13 @@ export function SaveTab() {
     }
   };
 
-  const setRow = (i: number, p: Partial<(typeof sel)[number]>) => patch({ saveSel: sel.map((r, k) => (k === i ? { ...r, ...p } : r)) });
-  const toggleClass = (i: number, c: CountClass) => {
-    const cur = sel[i].classes;
-    setRow(i, { classes: cur.includes(c) ? cur.filter((x) => x !== c) : COUNT_CLASSES.filter((x) => x === c || cur.includes(x)) });
+  const same = (x: CountClass[], y: CountClass[]) => x.length === y.length && x.every((c) => y.includes(c));
+  const hasSel = (cs: CountClass[]) => sel.some((r) => same(r.classes, cs));
+  /** Tick/untick a row; the rows stay in the order of ONE_COLOURS, then COMBOS. */
+  const toggleSel = (cs: CountClass[]) => {
+    const kept = hasSel(cs) ? sel.filter((r) => !same(r.classes, cs)) : [...sel, { classes: cs }];
+    const rank = (r: { classes: CountClass[] }) => [...ONE_COLOURS, ...COMBOS.map((c) => c.classes)].findIndex((x) => same(x, r.classes));
+    patch({ saveSel: [...kept].sort((x, y) => rank(x) - rank(y)) });
   };
 
   const save = async () => {
@@ -63,36 +71,22 @@ export function SaveTab() {
 
       <section>
         <h4>1. What to count</h4>
-        {sel.map((r, i) => (
-          <div className="save-row" key={i} data-testid={`save-row-${i}`}>
-            <div className="row wrap">
-              {COUNT_CLASSES.map((c) => (
-                <label className="chk small" key={c}>
-                  <input type="checkbox" checked={r.classes.includes(c)} onChange={() => toggleClass(i, c)} data-testid={`save-${i}-${c}`} /> {CLASS_TEXT[c]}
-                </label>
-              ))}
-              {sel.length > 1 && (
-                <button className="btn sm ghost" onClick={() => patch({ saveSel: sel.filter((_, k) => k !== i) })} aria-label="Remove this count">
-                  ✕
-                </button>
-              )}
-            </div>
-            <label className="small">
-              Written in the CSV as
-              <input
-                className="input sm"
-                value={r.label ?? ''}
-                placeholder={defaultLabel(r.classes) || 'what counted'}
-                onChange={(e) => setRow(i, { label: e.target.value })}
-                data-testid={`save-label-${i}`}
-              />
+        <div className="muted small">Each ticked colour becomes its own row in the CSV (with a Color column).</div>
+        <div className="row wrap">
+          {COUNT_CLASSES.map((c) => (
+            <label className="chk small" key={c}>
+              <input type="checkbox" checked={hasSel([c])} onChange={() => toggleSel([c])} data-testid={`save-${c}`} /> {CLASS_TEXT[c]}
             </label>
-          </div>
-        ))}
-        <button className="btn sm" onClick={() => patch({ saveSel: [...sel, { classes: ['yellow'] }] })} data-testid="save-add-row">
-          + Count something else too
-        </button>
-        <div className="muted small">Each line becomes its own row in the experiment CSV (the same grid fields, a different thing counted).</div>
+          ))}
+        </div>
+        <div className="muted small">Also as a combined row (the lab’s “positive” counts):</div>
+        <div className="row wrap">
+          {COMBOS.map((c) => (
+            <label className="chk small" key={c.classes.join('+')}>
+              <input type="checkbox" checked={hasSel(c.classes)} onChange={() => toggleSel(c.classes)} data-testid={`save-combo-${c.classes.join('-')}`} /> {c.text}
+            </label>
+          ))}
+        </div>
       </section>
 
       <section>

@@ -95,10 +95,10 @@ def test_save_writes_labeled_scan_and_csvs_next_to_original(client, scan_dir, de
     img = tifffile.imread(scan_dir / "AI_A_labeled.tif")
     assert img.ndim == 3 and img.shape[2] == 3 and img.dtype.name == "uint8"
     slide = rows(scan_dir / "AI_A.csv")
-    assert slide[0] == ["SlideID", "Total number of polonies"] + [f"Field{i}" for i in range(1, 25)]
+    assert slide[0] == ["SlideID", "Color", "Total number of polonies"] + [f"Field{i}" for i in range(1, 25)]
     # grid field 1: 3 red-only, field 2: counted but zero, field 3: switched off, field 4: 5
     # => the CSV lists the counted fields one by one (Field1..Field3), no gap for the switched-off field
-    assert slide[1][:6] == ["AI_A", "8", "3", "0", "5", ""] and set(slide[1][5:]) == {""}
+    assert slide[1][:7] == ["AI_A", "red", "8", "3", "0", "5", ""] and set(slide[1][6:]) == {""}
     exp = rows(scan_dir / "experiment_counts.csv")
     assert exp[0] == ["Slide name", "What counted", "NofPol", "NofGrids"] + [f"Field{i}" for i in range(1, 25)]
     assert exp[1][:8] == ["AI_A", "red, not yellow", "8", "3", "3", "0", "5", ""]
@@ -111,7 +111,10 @@ def test_two_selections_give_two_rows_and_resave_replaces(client, scan_dir, dete
     assert client.post(f"/api/analyses/{aid}/save-slide", json=body).status_code == 200
     exp = rows(scan_dir / "experiment_counts.csv")
     assert [(r[1], r[2]) for r in exp[1:]] == [("red, not yellow", "4"), ("yellow", "6")]
-    assert (scan_dir / "AI_A__red-not-yellow.csv").exists() and (scan_dir / "AI_A__yellow.csv").exists()
+    # one per-slide CSV with a row per colour and a Color column (no separate file per colour)
+    assert not list(scan_dir.glob("AI_A__*.csv"))
+    slide = rows(scan_dir / "AI_A.csv")
+    assert [(r[0], r[1], r[2]) for r in slide[1:]] == [("AI_A", "red", "4"), ("AI_A", "yellow", "6")]
     # second slide in the same folder appends; re-saving the first one replaces its rows, never duplicates
     shutil.copy(scan_dir / "AI_A.tif", scan_dir / "AI_B.tif")
     bid = open_and_prepare(client, scan_dir / "AI_B.tif", detector, {1: (2, 0)})
@@ -150,7 +153,7 @@ def test_upload_needs_output_dir_then_saves_there(client, scan_dir, detector, tm
     assert client.post(f"/api/analyses/{aid}/save-slide", json={**body, "output_dir": str(out)}).json()["code"] == "output_dir_missing"
     out.mkdir()
     ok = client.post(f"/api/analyses/{aid}/save-slide", json={**body, "output_dir": str(out)})
-    assert ok.status_code == 200 and rows(out / "AI_A.csv")[1][:3] == ["AI_A", "0", "0"]
+    assert ok.status_code == 200 and rows(out / "AI_A.csv")[1][:4] == ["AI_A", "red", "0", "0"]
 
 
 def test_no_fields_selected_is_refused(client, scan_dir, detector):
@@ -168,12 +171,12 @@ def test_grid_selection_off_on_roundtrip(client, scan_dir, detector):
     assert all(o["region_id"] is None for o in off["objects"] if o["id"].startswith("r2_"))
     body = {"selections": [{"classes": ["red"]}]}
     client.post(f"/api/analyses/{aid}/save-slide", json=body)
-    assert rows(scan_dir / "AI_A.csv")[1][:5] == ["AI_A", "3", "3", "", ""]       # field 2 blank, not 0
+    assert rows(scan_dir / "AI_A.csv")[1][:6] == ["AI_A", "red", "3", "3", "", ""]       # field 2 blank, not 0
     on = client.put(f"/api/analyses/{aid}/grid-selection", json={"field_index": 2, "counted": True}).json()
     assert [r["field_index"] for r in on["regions"]] == [1, 2] and on["slide"]["skipped_fields"] == []
     assert sum(1 for o in on["objects"] if o["region_id"] and o["id"].startswith("r2_")) == 2   # objects re-assigned
     client.post(f"/api/analyses/{aid}/save-slide", json=body)
-    assert rows(scan_dir / "AI_A.csv")[1][:5] == ["AI_A", "5", "3", "2", ""]
+    assert rows(scan_dir / "AI_A.csv")[1][:6] == ["AI_A", "red", "5", "3", "2", ""]
     # unknown field -> 404
     assert client.put(f"/api/analyses/{aid}/grid-selection", json={"field_index": 9, "counted": True}).status_code == 404
 
@@ -185,3 +188,13 @@ def test_csv_lists_counted_fields_one_by_one_whatever_their_grid_numbers():
     with pytest.raises(ss.ReviewError) as e:
         ss._field_cells({i: 1 for i in range(1, ss.N_FIELDS + 2)})
     assert e.value.code == "too_many_fields"
+
+
+def test_red_green_yellow_ticked_give_three_rows_with_a_color_column(client, scan_dir, detector):
+    aid = open_and_prepare(client, scan_dir / "AI_A.tif", detector, {1: (3, 2), 2: (1, 4)})
+    body = {"selections": [{"classes": ["red"]}, {"classes": ["green"]}, {"classes": ["yellow"]}]}
+    assert client.post(f"/api/analyses/{aid}/save-slide", json=body).status_code == 200
+    slide = rows(scan_dir / "AI_A.csv")
+    assert slide[0][:3] == ["SlideID", "Color", "Total number of polonies"]
+    assert [(r[0], r[1]) for r in slide[1:]] == [("AI_A", "red"), ("AI_A", "green"), ("AI_A", "yellow")]
+    assert len(rows(scan_dir / "experiment_counts.csv")) == 4      # header + one row per colour

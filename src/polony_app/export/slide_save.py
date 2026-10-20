@@ -23,7 +23,7 @@ N_FIELDS = 24
 SLIDE_TOTAL_COL = "Total number of polonies"
 EXPERIMENT_FILE = "experiment_counts.csv"
 EXPERIMENT_HEADER = ["Slide name", "What counted", "NofPol", "NofGrids"] + [f"Field{i}" for i in range(1, N_FIELDS + 1)]
-SLIDE_HEADER = ["SlideID", SLIDE_TOTAL_COL] + [f"Field{i}" for i in range(1, N_FIELDS + 1)]
+SLIDE_HEADER = ["SlideID", "Color", SLIDE_TOTAL_COL] + [f"Field{i}" for i in range(1, N_FIELDS + 1)]
 COUNTABLE = (ObjectClass.red, ObjectClass.green, ObjectClass.yellow)   # `uncertain` is never counted
 _RING = {ObjectClass.red: (255, 140, 0), ObjectClass.green: (0, 255, 255), ObjectClass.yellow: (255, 255, 0),
          ObjectClass.uncertain: (160, 160, 160)}
@@ -121,8 +121,15 @@ def _field_cells(counts: dict[int, int]) -> list[Optional[int]]:
     return cells + [None] * (N_FIELDS - len(cells))
 
 
-def slide_csv(slide_id: str, counts: dict[int, int]) -> str:
-    return _csv(SLIDE_HEADER, [[slide_id, sum(counts.values())] + _field_cells(counts)])
+def color_text(label: str, classes: Iterable[ObjectClass]) -> str:
+    """The 'Color' cell: red / green / yellow for a single class, else the combined label ('red and yellow')."""
+    cs = list(classes)
+    return cs[0].value if len(cs) == 1 else label
+
+
+def slide_csv(slide_id: str, rows: list[tuple[str, dict[int, int]]]) -> str:
+    """One row per counted colour: SlideID, Color, Total number of polonies, Field1.. (counted fields one by one)."""
+    return _csv(SLIDE_HEADER, [[slide_id, color, sum(c.values())] + _field_cells(c) for color, c in rows])
 
 
 def experiment_row(slide_name: str, what: str, counts: dict[int, int]) -> list:
@@ -237,7 +244,7 @@ def resolve_output_dir(a: Analysis, output_dir: Optional[str]) -> Path:
 
 def save_slide(a: Analysis, red: np.ndarray, green: np.ndarray, selections: list[tuple[str, tuple[ObjectClass, ...]]],
                out_dir: Path, file_name: Optional[str] = None) -> dict:
-    """Write <name>_labeled.tif, one per-slide CSV per selection and upsert experiment_counts.csv. Returns a report.
+    """Write <name>_labeled.tif, the per-slide CSV (one row per selection, with a Color column) and upsert experiment_counts.csv. Returns a report.
     <name> is `file_name` when given (the researcher typed it in the save dialog), else the scan's stem."""
     if not selections:
         raise ReviewError("invalid_selection", "choose at least one thing to count", 422)
@@ -257,11 +264,9 @@ def save_slide(a: Analysis, red: np.ndarray, green: np.ndarray, selections: list
         raise ReviewError("would_overwrite_original", "refusing to overwrite the original scan", 409)
     _write_tiff(labeled, img)
     files = [labeled.name]
-    multi = len(per_sel) > 1
-    for lab, _cls, counts in per_sel:
-        p = out_dir / (f"{fname}__{slug(lab)}.csv" if multi else f"{fname}.csv")
-        _atomic_write(p, slide_csv(slide_id, counts).encode("utf-8-sig"))
-        files.append(p.name)
+    p = out_dir / f"{fname}.csv"      # one file, one row per colour counted
+    _atomic_write(p, slide_csv(slide_id, [(color_text(lab, cls), counts) for lab, cls, counts in per_sel]).encode("utf-8-sig"))
+    files.append(p.name)
     upsert_experiment(out_dir / EXPERIMENT_FILE, [experiment_row(slide_id, lab, counts) for lab, _c, counts in per_sel])
     files.append(EXPERIMENT_FILE)
     unc = sum(1 for o in a.objects if not o.deleted and o.cls == ObjectClass.uncertain)

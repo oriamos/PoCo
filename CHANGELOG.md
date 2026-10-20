@@ -13,6 +13,10 @@ from 0.1.0; while the major version is 0.x, minor releases may change behaviour 
 
 ### Changed
 
+* **Save: one CSV row per colour, with a `Color` column.** Ticking red only, green only and yellow now gives a row for each (before, ticking several colours in one line
+  merged them into one combined row). `<name>.csv` is now `SlideID, Color, Total number of polonies, Field1 ... Field24` with one row per colour, in one file
+  (no more `<name>__<colour>.csv`). Combined rows (red + yellow, green + yellow together) are separate optional ticks. `experiment_counts.csv` keeps its columns
+  (`What counted` names the colour there).
 * **Save: "Choose folder and file name…" button** (desktop window): opens the system save window, where the researcher picks the folder and types the
   file name (used for `<name>_labeled.tif` and `<name>.csv`; the "Slide name" in the CSVs stays the scan's name). In the browser the folder is still typed.
 * **CSV: counted grid fields are listed one by one.** `Field1, Field2, ...` are the counted fields in grid order, whatever their numbers in the grid are

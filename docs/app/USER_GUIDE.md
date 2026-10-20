@@ -123,11 +123,11 @@ The detector can miss real spots and the queue cannot show what was not detected
 1. **Open from disk** (left rail) opens a TIFF in place, so the app knows its folder. (A dragged-in upload has no folder: the Save tab asks for an output folder.) Confirm the channel mapping.
 2. Create the grid (section 3), run detection, review and approve.
 3. **Save tab**:
-   * *What to count*: tick red only / green only / yellow (red + green). The CSV text is generated (`red, not yellow`, `yellow`, `red and yellow`, ...) and editable. **+ Count something else too** adds a row; each row becomes its own row in the experiment CSV.
+   * *What to count*: tick red only / green only / yellow (red + green); each ticked colour becomes its own row. Optionally also tick a combined row (red + yellow together, green + yellow together). Every row also becomes its own row in the experiment CSV.
    * *Grid fields to count*: click a field to switch it off (bad area) or on. Off = left out of the CSV; counted with no polonies = 0. The CSV lists the counted fields one by one (Field1, Field2, ...) in grid order, whatever their grid numbers are; at most 24 fields can be counted.
    * **Save** writes next to the original scan (`<name>` = file name without extension; the original is never modified):
      * `<name>_labeled.tif`: RGB scan with the grid, per-field counts and a ring around every counted object (orange red-only, cyan green-only, yellow yellow).
-     * `<name>.csv`: `SlideID, Total number of polonies, Field1 ... Field24`. With several rows: `<name>__<what-counted>.csv`, one per row.
+     * `<name>.csv`: `SlideID, Color, Total number of polonies, Field1 ... Field24`: one row per ticked colour (`Color` = red / green / yellow, or the combined text such as `red and yellow`), all in this one file.
      * `experiment_counts.csv` (one per folder): `Slide name, What counted, NofPol, NofGrids, Field1 ... Field24`. Saving the same slide + "what counted" again replaces its row; other slides are kept. An existing file with a different header is never overwritten.
    * Save does not require finalizing; uncertain objects are never counted; the report lists unapproved fields.
 
