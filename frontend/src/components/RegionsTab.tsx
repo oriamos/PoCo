@@ -246,14 +246,14 @@ function exclusionPolys(regions: Region[]) {
 function FieldSummary() {
   const a = useApp((s) => s.current)!;
   const fields = a.regions.filter((r) => r.kind === 'counting' && r.field_index != null);
-  const issues = fieldIssues(fields.map((r) => r.field_index));
+  const issues = fieldIssues(fields.map((r) => r.field_index), Infinity);
   const msgs = describeIssues(issues);
   const excl = exclusionPolys(a.regions);
   const partial = fields.filter((r) => coverageState(exclusionCoverage(r.polygon, excl)) === 'partial');
   const unnumbered = a.regions.filter((r) => r.kind === 'counting' && r.field_index == null).length;
   return (
     <div className="notice small" data-testid="field-note">
-      <strong>{NOTE}</strong> Only regions with a field number are lab fields (1–{MAX_FIELD}); delete a field region to leave that cell blank.
+      <strong>{NOTE}</strong> Only regions with a field number are grid fields; at most {MAX_FIELD} can be counted for the CSV.
       {fields.length > 0 && <div data-testid="field-count">{fields.length} lab field{fields.length > 1 ? 's' : ''} defined.</div>}
       {unnumbered > 0 && <div>{unnumbered} counting region{unnumbered > 1 ? 's have' : ' has'} no field number (not exported in the lab layout).</div>}
       {msgs.length > 0 && (
@@ -276,7 +276,7 @@ function FieldNumber({ region: r, locked }: { region: Region; locked: boolean })
   const others = a.regions.filter((x) => x.id !== r.id && x.kind === 'counting').map((x) => x.field_index);
   const fi = r.field_index ?? null;
   const dup = fi != null && others.includes(fi);
-  const bad = fi != null && (!Number.isInteger(fi) || fi < 1 || fi > MAX_FIELD);
+  const bad = fi != null && (!Number.isInteger(fi) || fi < 1);
   return (
     <div className="row wrap small">
       <label className="row">
@@ -296,7 +296,7 @@ function FieldNumber({ region: r, locked }: { region: Region; locked: boolean })
       </label>
       {fi == null && <span className="muted">none (not a lab field)</span>}
       {dup && <span className="warn-text" data-testid={`field-dup-${r.id}`}>duplicate field number</span>}
-      {bad && <span className="warn-text" data-testid={`field-bad-${r.id}`}>must be a whole number 1–{MAX_FIELD}</span>}
+      {bad && <span className="warn-text" data-testid={`field-bad-${r.id}`}>must be a whole number ≥ 1</span>}
     </div>
   );
 }
@@ -333,7 +333,7 @@ function GridGenerator() {
   const W = a.image?.width ?? Infinity;
   const H = a.image?.height ?? Infinity;
   const outside = cells.filter((c) => c.polygon.some(([x, y]) => x < -0.5 || y < -0.5 || x > W - 0.5 || y > H - 0.5)).length;
-  const issues = fieldIssues([...cells.map((c) => c.index), ...kept.filter((r) => r.kind === 'counting').map((r) => r.field_index)]);
+  const issues = fieldIssues([...cells.map((c) => c.index), ...kept.filter((r) => r.kind === 'counting').map((r) => r.field_index)], Infinity);
   const blocked = hasIssues(issues) || cells.length === 0 || g.cellW <= 0 || g.cellH <= 0;
   const partial = cover.filter((c) => c === 'partial').length;
   const full = cover.filter((c) => c === 'full').length;
@@ -364,18 +364,17 @@ function GridGenerator() {
     setTool('grid-pick');
     toast('success', `${cells.length}-field grid applied. Click fields to count them; click again to skip.`);
   };
-  // Randomise = same rows/cols/cell size, the whole grid shifted to a random position inside the image (server
-  // picks and records the seed).
+  // Randomise = the grid stays where it is; the server draws a new random selection of up to 24 counted fields
+  // (and records the seed).
   const randomise = async () => {
     if (blocked) return;
-    const approved = a.regions.filter((r) => r.kind === 'counting' && r.field_index != null && r.approved).length;
-    if (approved && !confirm(`Move the grid to a random position? ${approved} approved field(s) lose their approval.`)) return;
+    if (!confirm(`Pick a new random selection of ${Math.min(MAX_FIELD, cells.length)} counted fields? Your current on/off choices are replaced (Ctrl+Z undoes).`)) return;
     const next = await putGrid({ grid: toApiGrid({ ...g, seed: null, shiftDx: 0, shiftDy: 0 }), randomise: true, replace: mode === 'replace' });
     if (!next?.slide.grid) return;
     patch({ gridPreview: null });
     setTool('grid-pick');
     const s = next.slide.grid;
-    toast('success', `Grid randomised (seed ${s.seed}): shifted by ${s.shift_dx}, ${s.shift_dy} px. Ctrl+Z undoes.`);
+    toast('success', `New random selection of counted fields (seed ${s.seed}). Ctrl+Z undoes.`);
   };
   const remove = async () => {
     if (!stored) return;
@@ -402,7 +401,7 @@ function GridGenerator() {
         <div className="row wrap small" data-testid="grid-stored">
           <span className="mono">
             {stored.rows} × {stored.cols} grid · {nOn} of {storedCells.length} fields counted
-            {stored.seed != null ? ` · randomised (seed ${stored.seed}, shift ${stored.shift_dx}, ${stored.shift_dy} px)` : ''}
+            {stored.seed != null ? ` · random selection (seed ${stored.seed})` : ''}
           </span>
           <button
             className={`btn sm${tool === 'grid-pick' ? ' primary' : ''}`}
@@ -467,13 +466,13 @@ function GridGenerator() {
           </div>
           {describeIssues(issues).length > 0 && (
             <div className="notice err small" role="alert" data-testid="grid-issues">
-              Cannot apply or randomise: {describeIssues(issues).join('; ')}. Reduce rows × columns to 24 or fewer.
+              Cannot apply or randomise: {describeIssues(issues).join('; ')}.
             </div>
           )}
           {outside > 0 && <div className="small warn-text">{outside} cell(s) extend beyond the image.</div>}
-          {stored?.seed != null && (
-            <div className="small muted" data-testid="grid-shift-note">
-              The applied grid is shifted by {stored.shift_dx}, {stored.shift_dy} px from the origin above (seed {stored.seed}). Apply puts it back at the origin; Randomise picks a new position.
+          {cells.length > MAX_FIELD && (
+            <div className="small muted" data-testid="grid-many-note">
+              {cells.length} cells cover the image; {MAX_FIELD} of them are counted, drawn at random from the cells fully on the image (edge cells that overhang stay off). Click fields to change the choice; Randomise draws again.
             </div>
           )}
           {(partial > 0 || full > 0) && (
@@ -497,7 +496,7 @@ function GridGenerator() {
               className="btn sm"
               disabled={blocked || !a.image}
               onClick={() => void randomise()}
-              title="Same rows, columns and cell size; the whole grid moves to a random position inside the image"
+              title="The grid stays where it is; a new random selection of up to 24 fields is counted"
               data-testid="grid-randomise"
             >
               Randomise

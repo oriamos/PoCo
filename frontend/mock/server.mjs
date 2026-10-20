@@ -1379,16 +1379,26 @@ async function handle(req, res) {
       spec.shift_dx = spec.shift_dx ?? 0;
       spec.shift_dy = spec.shift_dy ?? 0;
       if (!(spec.rows >= 1 && spec.cols >= 1 && spec.cell_w > 0 && spec.cell_h > 0 && spec.first_index >= 1)) throw new HttpError(422, 'invalid_grid', 'bad grid');
-      if (spec.first_index + spec.rows * spec.cols - 1 > 24) throw new HttpError(422, 'invalid_grid', 'field numbers exceed 24');
       if (body.randomise) {
         spec.seed = body.seed ?? Math.floor(Math.random() * 2 ** 31);
-        const rng = mulberry32(spec.seed);
-        const ux = rng(), uy = rng();
-        spec.shift_dx = axisShift(spec.origin_x, spec.cols, spec.cell_w, W, ux);
-        spec.shift_dy = axisShift(spec.origin_y, spec.rows, spec.cell_h, H, uy);
+        spec.shift_dx = 0;
+        spec.shift_dy = 0;
       }
       snapshot(a);
       const cells = gridCells(spec);
+      // more than 24 cells (or Randomise): a seeded random selection of 24 fully-inside cells is counted
+      let chosen = null;
+      if (body.randomise || cells.length > 24) {
+        spec.seed = spec.seed ?? Math.floor(Math.random() * 2 ** 31);
+        const inside = (c) => c.polygon.every(([x, y]) => x >= -1.5 && y >= -1.5 && x <= W + 0.5 && y <= H + 0.5);
+        const pool = cells.filter(inside).map((c) => c.fi);
+        const rng = mulberry32(spec.seed);
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.min(i, Math.floor(rng() * (i + 1)));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        chosen = new Set(pool.slice(0, 24));
+      }
       const own = new Set(cells.map((c) => c.fi));
       const byIdx = new Map();
       for (const r of fields) if (!byIdx.has(r.field_index)) byIdx.set(r.field_index, r);
@@ -1396,7 +1406,15 @@ async function handle(req, res) {
       const made = [];
       const off = [];
       for (const c of cells) {
-        const cur = byIdx.get(c.fi);
+        let cur = byIdx.get(c.fi);
+        if (chosen && (body.randomise || (!cur && !skIdx.has(c.fi)))) {
+          const on = chosen.has(c.fi);
+          if (on && skIdx.has(c.fi)) skIdx.delete(c.fi);
+          else if (!on && cur) {
+            cur = undefined;
+            skIdx.set(c.fi, { field_index: c.fi, name: `Field-${c.fi}`, polygon: c.polygon });
+          } else if (!on && !skIdx.has(c.fi)) skIdx.set(c.fi, { field_index: c.fi, name: `Field-${c.fi}`, polygon: c.polygon });
+        }
         if (cur) {
           const moved = JSON.stringify(cur.polygon) !== JSON.stringify(c.polygon);
           made.push(moved ? { ...cur, polygon: c.polygon, approved: false, approved_at: null, approval_fingerprint: null, inspected: false } : cur);

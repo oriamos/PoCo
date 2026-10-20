@@ -532,8 +532,9 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
         """Store the counting-grid spec and (re)create the lab field regions from it in one undoable step.
         Per field index: a field that was switched off stays off (its geometry in slide.skipped_fields follows the
         grid), a field that exists keeps its region id, so its approval survives only if its polygon did not move
-        (approval fingerprint). randomise=true: the server shifts the whole grid to a random position inside the
-        image (cell size and count unchanged) and records the seed. grid=null: removes the grid."""
+        (approval fingerprint). A grid with more than 24 cells (it may cover the whole image) counts a random
+        selection of 24 of them; randomise=true draws a new selection (the grid itself does not move). The seed is
+        recorded in the spec, so the selection is reproducible. grid=null: removes the grid."""
         from polony_app.fields import grid as grid_mod
         from polony_app.schemas import RegionKind, SkippedField
 
@@ -568,9 +569,18 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
                 import secrets
 
                 spec.seed = body.seed if body.seed is not None else secrets.randbelow(2**31)
-                spec.shift_dx, spec.shift_dy = grid_mod.random_shift(spec, a.image.width, a.image.height, spec.seed)
+                spec.shift_dx = spec.shift_dy = 0.0
             cells = grid_mod.spec_cells(spec)
             own = {fi for fi, *_ in cells}
+            # which cells are counted: all of them (<= 24 cells); else a seeded random selection of 24. Randomise
+            # redraws the selection for every cell; otherwise only cells with no earlier on/off choice take it.
+            chosen: Optional[set] = None
+            if a.image is not None and (body.randomise or len(cells) > grid_mod.MAX_FIELD):
+                if spec.seed is None:
+                    import secrets
+
+                    spec.seed = secrets.randbelow(2**31)
+                chosen = grid_mod.pick_fields(spec, a.image.width, a.image.height, spec.seed)
             by_index: dict[int, Region] = {}
             for r in fields:
                 by_index.setdefault(r.field_index, r)          # a duplicated field number: the first one is kept
@@ -580,6 +590,17 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             new_skipped: list[SkippedField] = []
             for fi, _r, _c, poly in cells:
                 cur = by_index.get(fi)
+                known = cur is not None or fi in skipped
+                if chosen is not None and (body.randomise or not known):
+                    want_on = fi in chosen
+                    if want_on and fi in skipped:
+                        skipped.pop(fi)                                   # becomes a counted field again
+                    elif not want_on and cur is not None:
+                        by_index.pop(fi)
+                        cur = None
+                        skipped[fi] = SkippedField(field_index=fi, name=f"Field-{fi}", polygon=[tuple(p) for p in poly])
+                    elif not want_on and fi not in skipped:
+                        skipped[fi] = SkippedField(field_index=fi, name=f"Field-{fi}", polygon=[tuple(p) for p in poly])
                 if cur is not None:
                     grid_regions.append(Region(id=cur.id, kind=RegionKind.counting, name=cur.name, field_index=fi,
                                                polygon=[tuple(p) for p in poly]))

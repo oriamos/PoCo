@@ -36,11 +36,11 @@ Usual counting regions are the **grid fields** (below). You can also draw a **co
 
 ### Grid: click to select, Randomise
 
-Regions tab, **Generate grid…**: rows, columns, cell size, origin, numbering order, start corner. **Preview on image** shows the grid (dashed cyan) before anything is stored.
+Regions tab, **Generate grid…**: rows, columns, cell size, origin, numbering order, start corner. The default grid tiles the **whole image** (316 px cells from the top-left corner), so it can have more than 24 cells; at most 24 fields are counted (the CSV has Field1..Field24). **Preview on image** shows the grid (dashed cyan) before anything is stored.
 
-* **Apply** stores the grid with the analysis (survives a reload) and creates one counting region `Field-N` per cell. The tool switches to **Pick fields**: click a field to count it, click again to skip it (skipped = blank in the CSVs; counted with no polonies = 0). Counted fields: solid outline and number; skipped: dotted grey outline. Keys: **A** all, **N** none, **I** invert, **Esc** leaves the tool. A field fully inside an exclusion mask cannot be switched on.
-* **Randomise** keeps rows, columns and cell size and moves the whole grid to a random whole-pixel position inside the image. The seed is recorded (under *Grid fields* and in `provenance.json`) so the position can be reproduced. Ctrl+Z undoes it.
-* Applying again (or randomising) keeps each field's on/off choice by field number. A field that does not move keeps its approval; one that moves loses it, as with a hand edit. **Apply** always uses the origin in the form (no random shift).
+* **Apply** stores the grid with the analysis (survives a reload) and creates one counting region `Field-N` per cell (a grid with more than 24 cells counts a seeded random selection of 24 cells that lie fully on the image; overhanging edge cells start switched off). The tool switches to **Pick fields**: click a field to count it, click again to skip it (skipped = blank in the CSVs; counted with no polonies = 0). Counted fields: solid outline and number; skipped: dotted grey outline. Keys: **A** all, **N** none, **I** invert, **Esc** leaves the tool. A field fully inside an exclusion mask cannot be switched on.
+* **Randomise** keeps the grid where it is and draws a new random selection of up to 24 counted fields (replacing your on/off choices). The seed is recorded (under *Grid fields* and in `provenance.json`) so the selection can be reproduced. On a grid with 24 cells or fewer every cell on the image is counted. Ctrl+Z undoes it.
+* Applying again (or randomising) keeps each field's on/off choice by field number. A field that does not move keeps its approval; one that moves loses it, as with a hand edit. **Apply** always uses the origin in the form.
 * **Remove grid** deletes the grid and its field regions; always possible (grid fields have no approval step).
 
 Rectangle and polygon tools stay available for exclusions and for slides without a grid.

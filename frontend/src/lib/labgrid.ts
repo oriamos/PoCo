@@ -148,20 +148,17 @@ export function storedGridCells(a: Analysis): (GridCell & { state: GridFieldStat
   return generateGrid(fromApiGrid(g)).map((c) => ({ ...c, state: on.has(c.index) ? 'on' : off.has(c.index) ? 'off' : 'missing' }));
 }
 
-/** Default grid for an image: 4 x 6 = 24 cells of ~316 px (the lab template has fields 1-24), centred, oriented by aspect. */
+/** Default grid for an image: square cells of ~316 px (the ImageJ size) tiling the WHOLE image from its top-left corner.
+ *  It can have more than 24 cells; the server then counts a random selection of 24 (the CSV has Field1..Field24). */
 export function defaultGrid(w: number, h: number): GridSpec {
-  const landscape = w >= h;
-  const rows = landscape ? 4 : 6;
-  const cols = landscape ? 6 : 4;
-  let cell = 316;
-  if (cols * cell > w || rows * cell > h) cell = Math.max(1, Math.floor(Math.min(w / cols, h / rows)));
+  const cell = Math.max(1, Math.min(316, Math.floor(Math.min(w, h) / 2)));
   return {
-    rows,
-    cols,
+    rows: Math.max(1, Math.ceil(h / cell)),
+    cols: Math.max(1, Math.ceil(w / cell)),
     cellW: cell,
     cellH: cell,
-    originX: Math.max(0, Math.round((w - cols * cell) / 2)),
-    originY: Math.max(0, Math.round((h - rows * cell) / 2)),
+    originX: 0,
+    originY: 0,
     order: 'row-major',
     corner: 'tl',
     firstIndex: 1,
@@ -196,8 +193,8 @@ export interface FieldIssues {
   duplicates: number[];
 }
 
-/** Check a list of field indices (null entries ignored). */
-export function fieldIssues(indices: (number | null | undefined)[]): FieldIssues {
+/** Check a list of field indices (null entries ignored). `maxField`: highest allowed number (Infinity = no cap, for grid fields). */
+export function fieldIssues(indices: (number | null | undefined)[], maxField = MAX_FIELD): FieldIssues {
   const seen = new Map<number, number>();
   const out: FieldIssues = { tooHigh: [], invalid: [], duplicates: [] };
   for (const v of indices) {
@@ -206,7 +203,7 @@ export function fieldIssues(indices: (number | null | undefined)[]): FieldIssues
       out.invalid.push(v);
       continue;
     }
-    if (v > MAX_FIELD) out.tooHigh.push(v);
+    if (v > maxField) out.tooHigh.push(v);
     seen.set(v, (seen.get(v) ?? 0) + 1);
   }
   out.duplicates = [...seen].filter(([, n]) => n > 1).map(([k]) => k);

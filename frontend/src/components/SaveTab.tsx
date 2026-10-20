@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { nativeSaveAvailable, pickNativeSave } from '../lib/nativePicker';
 import { api, ApiError } from '../api/client';
 import type { CountClass, SaveSlideReport } from '../api/types';
+import { MAX_FIELD } from '../lib/labgrid';
 import { COUNT_CLASSES, dirOf, gridFields, selectionProblems } from '../lib/saveslide';
 import { useApp } from '../state/store';
 
@@ -24,9 +25,12 @@ export function SaveTab() {
   const [report, setReport] = useState<SaveSlideReport | null>(null);
   const [error, setError] = useState('');
   const src = a.image?.source_path ?? null;
-  const problems = selectionProblems(sel);
   const fields = useMemo(() => gridFields(a), [a]);
   const counted = fields.filter((f) => f.counted).length;
+  const problems = [
+    ...selectionProblems(sel),
+    ...(counted > MAX_FIELD ? [`${counted} fields are counted but the CSV has room for ${MAX_FIELD}: switch ${counted - MAX_FIELD} off, or use Randomise in the Regions tab.`] : []),
+  ];
   // the experiment's folder (picked once when the experiment was created); the server uses it when no folder is sent
   const expId = a.experiment_id ?? null;
   const [expDir, setExpDir] = useState<string | null>(null);

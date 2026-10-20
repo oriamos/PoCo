@@ -613,7 +613,8 @@ async function gridPickSuite() {
   check('after reload fields 2 and 5 still selected', JSON.stringify((await onCells()).sort()) === '[2,5]');
   await tid('grid-toggle').click();
   check('stored spec loaded into the generator form', (await tid('grid-rows').inputValue()) === '2' && (await tid('grid-cellW').inputValue()) === '100' && (await tid('grid-originX').inputValue()) === '20');
-  // Randomise: same size and count, inside the image, selection kept by field number, seed recorded
+  // Randomise: the grid stays in place (6 cells, all fully on the image -> all counted), a new seed is recorded
+  page.once('dialog', (d) => d.accept());
   await tid('grid-randomise').click();
   await page.waitForFunction(() => window.__polony.getState().current.slide.grid?.seed != null);
   srv = (await (await fetch(`${BASE}/api/analyses/demo`)).json()).slide;
@@ -623,15 +624,15 @@ async function gridPickSuite() {
   const inside = polys.every((p) => p.every(([x, y]) => x >= -0.5 && y >= -0.5 && x <= 511.5 && y <= 383.5));
   const sized = polys.every((p) => p[1][0] - p[0][0] === 100 && p[2][1] - p[1][1] === 100);
   check('Randomise keeps size/count, stays inside, records the seed', g.rows === 2 && g.cols === 3 && polys.length === 6 && inside && sized && Number.isInteger(g.seed), JSON.stringify(g));
-  check('Randomise keeps the selected field numbers', JSON.stringify(regs.map((r) => r.field_index).sort()) === '[2,5]' && (await tid('grid-stored').innerText()).includes(`seed ${g.seed}`));
+  check('Randomise draws a new selection (<= 24 cells: all counted)', JSON.stringify(regs.map((r) => r.field_index).sort()) === '[1,2,3,4,5,6]' && (await tid('grid-stored').innerText()).includes(`seed ${g.seed}`));
   check('grid-pick active after Randomise', (await st()).tool === 'grid-pick');
   // I = invert
   await page.mouse.move(5, 5);
   await page.keyboard.press('i');
   await page
-    .waitForFunction(() => [...document.querySelectorAll('[data-testid=grid-cells] g[data-on="1"]')].map((g) => g.dataset.field).sort().join() === '1,3,4,6')
+    .waitForFunction(() => document.querySelectorAll('[data-testid=grid-cells] g[data-on="1"]').length === 0)
     .catch(() => undefined);
-  check('I inverts the selection', JSON.stringify((await onCells()).sort()) === '[1,3,4,6]', JSON.stringify(await onCells()));
+  check('I inverts the selection (all six were counted)', JSON.stringify(await onCells()) === '[]', JSON.stringify(await onCells()));
   // Esc leaves the tool; A then means add mode again
   await page.keyboard.press('Escape');
   check('Esc leaves grid-pick', (await st()).tool === 'select');
@@ -647,7 +648,7 @@ async function labSuite() {
   check('blank-vs-zero note shown', /No region = BLANK cell, region with 0 objects = 0/.test(await tid('field-note').innerText()));
   await tid('grid-toggle').click();
   check('numbering-order caveat shown', /confirm with your lab convention/.test(await tid('grid-order-note').innerText()));
-  check('defaults prefilled 4x6 (24 lab fields)', (await tid('grid-rows').inputValue()) === '4' && (await tid('grid-cols').inputValue()) === '6');
+  check('defaults tile the whole 512x384 image (2x3 cells of 192 px)', (await tid('grid-rows').inputValue()) === '2' && (await tid('grid-cols').inputValue()) === '3' && (await tid('grid-originX').inputValue()) === '0');
   // image is small: use an explicit 2x3 grid inside the demo region
   const setNum = async (k, v) => tid(`grid-${k}`).fill(String(v));
   await setNum('rows', 2); await setNum('cols', 3); await setNum('cellW', 100); await setNum('cellH', 100); await setNum('originX', 20); await setNum('originY', 20);
@@ -659,7 +660,7 @@ async function labSuite() {
   check('partial exclusion warned', (await tid('grid-exclusion-warn').count()) === 1 && /partially covered/.test(await tid('grid-exclusion-warn').innerText()));
   await setNum('originX', 20); await setNum('originY', 20);
   await setNum('firstIndex', 23);
-  check('field numbers > 24 refuse apply', (await tid('grid-apply').isDisabled()) && /exceed 24/.test(await tid('grid-issues').innerText()));
+  check('field numbers > 24 are fine for a grid (at most 24 are counted)', !(await tid('grid-apply').isDisabled()) && (await tid('grid-issues').count()) === 0);
   await setNum('firstIndex', 1);
   await tid('grid-mode').selectOption('add');
   page.once('dialog', (d) => d.accept());
@@ -1125,7 +1126,7 @@ async function experimentSuite() {
   const seeds = await page.$$eval('[data-testid^="exp-grid-"][data-seed]', (els) => els.map((e) => e.dataset.seed).filter(Boolean));
   const srvSeeds = await Promise.all([s1, s2, s3].map(async (id) => String((await api(`/analyses/${id}`)).slide.grid.seed)));
   check('Randomise on all: one fresh seed per slide, shown in the table', seeds.length === 3 && new Set(seeds).size === 3 && JSON.stringify(seeds) === JSON.stringify(srvSeeds), `${seeds} vs ${srvSeeds}`);
-  check('Randomise keeps the skipped field', skippedOf(await api(`/analyses/${s3}`)) === '[6]');
+  check('Randomise redraws the selection (nothing switched off on a small grid)', skippedOf(await api(`/analyses/${s3}`)) === '[]');
   check('seed in the row tooltip', (await tid(`exp-grid-${s2}`).getAttribute('title')) === `seed ${srvSeeds[1]}`);
 
   // run and leave: progress, then done_with_failures with the failed row showing its error

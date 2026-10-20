@@ -13,6 +13,11 @@ from 0.1.0; while the major version is 0.x, minor releases may change behaviour 
 
 ### Changed
 
+* **The grid covers the whole image.** The default grid tiles the entire scan with 316 px cells from the top-left corner (for example 7 × 4 = 28 cells on a
+  2212 × 1264 scan); a grid may have more than 24 cells. At most 24 fields are counted (the CSV has Field1..Field24): when the grid has more cells the app counts a
+  seeded random selection of 24 cells that lie fully on the image (overhanging edge cells start switched off), and **Randomise** now draws a new selection
+  instead of shifting the grid, so every part of the slide can be sampled. The seed is recorded; click fields to change the choice. Save refuses with a clear
+  message when more than 24 fields are on. The lab Excel export still needs field numbers 1-24.
 * **One save folder per experiment.** "New experiment" asks for the folder once (button in the desktop window, typed path in the browser; changeable in the experiment
   header). Save on any slide of the experiment then writes there automatically and the Save tab no longer asks. `experiments.save_dir` (SQLite column added
   automatically; Postgres schema version 4).
