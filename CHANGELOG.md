@@ -3,6 +3,19 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
+## 0.3.3 — the AI detector installs on Apple Silicon Macs with an Intel Python, and on Intel Macs (2026-10-20)
+
+### Fixed
+
+* **Installer: an Intel (x86_64) Python on an Apple Silicon Mac** (for example an Intel miniconda running under Rosetta) was mistaken for an Intel Mac, so
+  PyTorch was not installed and the AI detector failed with `No module named 'torch'`. On Apple Silicon, `install.sh` now skips Intel Pythons (also in an
+  existing environment) and downloads a native arm64 Python 3.12 with `uv` when none is found, so current PyTorch and the Apple GPU (MPS) are used.
+
+### Added
+
+* **AI detector on real Intel Macs:** installs PyTorch 2.2.2 / torchvision 0.17.2 (the last releases published for Intel Macs) with `numpy<2`; CPU only, slower.
+  Not yet tested on Intel hardware.
+
 ## 0.3.2 — one-click rejection of debris-like Big-FISH-only candidates (2026-10-19)
 
 ### Added
