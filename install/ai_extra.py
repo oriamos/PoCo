@@ -22,6 +22,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TORCH = "2.14.1"
 TORCHVISION = "0.29.1"          # the release that matches torch 2.14.1 (0.29.0 conflicts with it)
+INTEL_MAC_PINS = ["torch==2.2.2", "torchvision==0.17.2", "numpy<2"]   # last PyTorch release published for Intel Macs (needs numpy 1.x)
 CPU_INDEX = "https://download.pytorch.org/whl/cpu"
 CUDA_INDEX = "https://download.pytorch.org/whl/cu126"
 CHECK_CODE = (
@@ -52,8 +53,8 @@ def plan(system: str, machine: str, nvidia: bool, cuda: str = "auto") -> dict:
         if m in ("arm64", "aarch64"):
             return dict(supported=True, index_url=None, pins=pins, device="mps", size_gb="0.8",
                         label="PyTorch from PyPI (uses the Apple GPU via MPS when available)")
-        return dict(supported=False, index_url=None, pins=[], device="cpu", size_gb="0",
-                    label="Intel Macs: current PyTorch releases are not published for this platform")
+        return dict(supported=True, index_url=None, pins=list(INTEL_MAC_PINS), device="cpu", size_gb="0.3",
+                    label="PyTorch 2.2.2 from PyPI (last release for Intel Macs; CPU only, slower)")
     if system in ("Linux", "Windows"):
         if m not in ("x86_64", "amd64"):
             if system == "Linux":  # e.g. aarch64: PyPI wheels are CPU builds
@@ -75,6 +76,7 @@ def pip_commands(p: dict) -> list[list[str]]:
     if p["index_url"]:
         first += ["--index-url", p["index_url"]]
     second = ["install", "--disable-pip-version-check", "-r", str(HERE / "extra-ai-requirements.txt")]
+    second += [x for x in p["pins"] if x.startswith("numpy")]   # keep numpy 1.x while spotiflow's dependencies install
     return [first, second]
 
 

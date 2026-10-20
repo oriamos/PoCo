@@ -99,7 +99,8 @@ Interactively (terminal present, not CI) the installer asks *"Install the AI det
 | Windows, Linux (x86-64), no NVIDIA GPU | PyTorch **CPU** wheels from `download.pytorch.org/whl/cpu` | measured on Linux: venv 646 MB -> 1.8 GB |
 | Windows, Linux with an NVIDIA GPU (`nvidia-smi` found) | asks whether to use the **CUDA 12.6** build (`POLONY_AI_CUDA=1` for unattended) | about 2.5 GB or more |
 | macOS Apple Silicon | default PyPI wheels, uses the Apple GPU (MPS) when available; falls back to CPU automatically when an MPS op is missing | about 0.8 GB |
-| Intel Macs, Windows on ARM | not available (no current PyTorch wheels); Big-FISH keeps working | none |
+| Intel Macs | PyTorch 2.2.2 (last release for Intel Macs, CPU only, slower; needs Python 3.9-3.12) | none |
+| Windows on ARM | not available (no PyTorch wheels); Big-FISH keeps working | none |
 
 `torch` and `torchvision` are installed **together as a matching, pinned pair** (torch 2.14.1 / torchvision 0.29.1; a mismatched torchvision breaks Spotiflow with `torchvision::nms does not exist`), then `spotiflow==0.6.5` (`install/extra-ai-requirements.txt`), then an import check that also calls a torchvision operator. If anything fails the installer says so and **Big-FISH still works**. The result is recorded as `"ai_enabled"` in `config.json`.
 

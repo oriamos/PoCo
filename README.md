@@ -61,7 +61,7 @@ bash install.sh
 ```
 On Windows, download `install.ps1` and `SHA256SUMS.txt` from the same release page, compare `(Get-FileHash install.ps1 -Algorithm SHA256).Hash` with the `install.ps1` line of `SHA256SUMS.txt`, read the script, then run `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1`.
 
-* **AI detector (Spotiflow + PyTorch, about 0.8–2.5 GB extra, plus the 47 MB fine-tuned model):** add `--with-ai` (`-WithAi` on Windows). The installer also downloads the fine-tuned model, checks its SHA-256 and makes it the default. Apple Silicon uses the GPU when available. Intel Macs: Big-FISH only.
+* **AI detector (Spotiflow + PyTorch, about 0.8–2.5 GB extra, plus the 47 MB fine-tuned model):** add `--with-ai` (`-WithAi` on Windows). The installer also downloads the fine-tuned model, checks its SHA-256 and makes it the default. Apple Silicon uses the GPU when available. Intel Macs: older PyTorch 2.2.2, CPU only.
 * Install, update, uninstall, troubleshooting: [docs/app/INSTALL.md](docs/app/INSTALL.md). Development branch (unstable, testing only): set `POLONY_REF=main` before running the installer.
 
 ## What the scientific results do and do not show
@@ -85,7 +85,7 @@ These numbers measure **agreement with saved marks, not accuracy** on new images
 
 ## Status and limitations
 * **Status:** research software, release 0.3.2. Run end to end on real two-channel slides against the researcher's marks; accuracy is partial and the defaults are not final.
-* **Limitations:** pixel size is not applied to distances (everything is in image pixels unless you set it); the shipped model's evaluation is agreement with saved marks only and its base-weights licence is unconfirmed ([MODEL_CARD.md](MODEL_CARD.md)); Intel Macs support Big-FISH only; Apple Silicon Spotiflow falls back to CPU for unsupported operations.
+* **Limitations:** pixel size is not applied to distances (everything is in image pixels unless you set it); the shipped model's evaluation is agreement with saved marks only and its base-weights licence is unconfirmed ([MODEL_CARD.md](MODEL_CARD.md)); Intel Macs run the AI detector on CPU with PyTorch 2.2.2 (untested on hardware); Apple Silicon Spotiflow falls back to CPU for unsupported operations.
 * **Test results** are in the CI badges above and the [CI workflow runs](https://github.com/oriamos/poco/actions). This README does not copy test counts, which go stale.
 
 ## Documentation
