@@ -121,7 +121,12 @@ main() {
 
     # ---------------------------------------------------------------- 2. python + venv
     step 2 "Preparing Python (3.10-3.13) and a private virtual environment in $VENV"
-    py_ok() {  # $1 = interpreter; prints its version when it is 3.10-3.13
+    # Apple Silicon hardware (also true inside a Rosetta shell): an Intel (x86_64) Python there would get no PyTorch/GPU
+    apple_silicon() { [ "${POLONY_FORCE_OS:-$(uname -s)}" != linux ] && [ "$(uname -s)" = Darwin ] && [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; }
+    py_ok() {  # $1 = interpreter; prints its version when it is 3.10-3.13 (and native arm64 on Apple Silicon)
+      if apple_silicon; then
+        case "$("$1" -c 'import platform; print(platform.machine())' 2>/dev/null)" in arm64|aarch64) ;; *) return 1 ;; esac
+      fi
       "$1" -c 'import sys; v=sys.version_info[:2]; assert (3,10)<=v<=(3,13); print("%d.%d"%v)' 2>/dev/null
     }
     find_python() {
@@ -160,11 +165,13 @@ main() {
       if py="$(find_python)" && make_venv_with "$py"; then
         say "  using the Python $(py_ok "$py") found at $py"; return
       fi
+      apple_silicon && say "  (no native Apple Silicon Python found; Intel Pythons are skipped because they cannot use PyTorch's current builds or the GPU)"
       [ -n "${py:-}" ] && warn "could not create a virtual environment with $py (on Debian/Ubuntu 'python3-venv' is missing); using a downloaded Python instead"
       bootstrap_uv
       say "  Downloading a standalone Python 3.12 with uv (about 30 MB) ..."
       rm -rf "$VENV"
-      UV_PYTHON_INSTALL_DIR="$PH/python" "$UV" venv --seed --python 3.12 "$VENV" || die "uv could not set up Python 3.12"
+      local want=3.12; apple_silicon && want=cpython-3.12-macos-aarch64   # native build even when this shell runs under Rosetta
+      UV_PYTHON_INSTALL_DIR="$PH/python" "$UV" venv --seed --python "$want" "$VENV" || die "uv could not set up Python 3.12"
       "$VPY" -m pip --version >/dev/null 2>&1 || die "the virtual environment has no pip"
     }
     if [ "$DRY" = 1 ]; then

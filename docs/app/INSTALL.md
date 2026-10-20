@@ -102,6 +102,8 @@ Interactively (terminal present, not CI) the installer asks *"Install the AI det
 | Intel Macs | PyTorch 2.2.2 (last release for Intel Macs, CPU only, slower; needs Python 3.9-3.12) | none |
 | Windows on ARM | not available (no PyTorch wheels); Big-FISH keeps working | none |
 
+On an Apple Silicon Mac the installer skips Intel (x86_64) Pythons, such as an Intel miniconda running under Rosetta, and downloads a native arm64 Python instead, so the Apple GPU and current PyTorch work.
+
 `torch` and `torchvision` are installed **together as a matching, pinned pair** (torch 2.14.1 / torchvision 0.29.1; a mismatched torchvision breaks Spotiflow with `torchvision::nms does not exist`), then `spotiflow==0.6.5` (`install/extra-ai-requirements.txt`), then an import check that also calls a torchvision operator. If anything fails the installer says so and **Big-FISH still works**. The result is recorded as `"ai_enabled"` in `config.json`.
 
 **Model:** the first AI detection needs the pretrained model (about 88 MB, downloaded once into `~/PolonyReview/models/spotiflow`). To fetch it now, or on a computer that will later be offline: `~/PolonyReview/bin/polony-review prepare-model [--model general]` (Windows: `...\venv\Scripts\python.exe -m polony_app.launcher prepare-model`); it prints the model's sha256. Without internet, copy the model folder (`general/` with `config.yaml` and the weights) into that directory, or set `POLONY_MODEL_DIR`. `polony-review status` shows `AI detector: installed (spotiflow x, torch y, device cpu|cuda|mps)` or `not installed`.
