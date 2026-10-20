@@ -62,9 +62,9 @@ def test_f1_mapping_swap_without_detection_clears_approval_inspection_undo():
     r = st.analysis.regions[0]
     assert not r.approved and not r.inspected and r.approval_fingerprint is None
     assert st.undo == [] and st.redo == []
-    assert "regions_not_approved" in codes(st)
-    with pytest.raises(ReviewError):
-        engine.finalize(st)
+    assert "regions_not_approved" not in codes(st)      # no separate approval step: finalizing confirms the regions
+    engine.finalize(st)
+    assert st.analysis.regions[0].approved
 
 
 def test_f1_alignment_change_without_detection_clears_approval():
@@ -73,10 +73,10 @@ def test_f1_alignment_change_without_detection_clears_approval():
     inspect_and_approve(st)
     engine.set_alignment(st, 3, 3)
     assert not st.analysis.regions[0].approved and not st.analysis.regions[0].inspected and st.undo == []
-    with pytest.raises(ReviewError):
-        engine.finalize(st)
     ev = [e for e in st.events if e["event"] == "alignment_changed"][-1]
     assert ev["approvals_cleared"] == ["c1"] and ev["dy"] == 3
+    engine.finalize(st)        # finalizing confirms the regions again, against the new alignment
+    assert st.analysis.regions[0].approved
 
 
 def test_f1_fingerprint_itself_covers_roles_and_alignment():

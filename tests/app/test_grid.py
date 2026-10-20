@@ -130,10 +130,8 @@ def test_moved_field_loses_approval(client, aid, detector):
     assert sorted(g) == [1, 2, 3, 4]
     assert g[1]["approved"] and g[1]["id"] == f[1]["id"]
     assert not g[3]["approved"] and g[3]["id"] == f[3]["id"] and g[3]["polygon"][0] == [10, 50]
-    # clearing refuses while a grid field is approved, unless forced
-    r = put_grid(client, aid, grid=None)
-    assert r.status_code == 409 and r.json()["code"] == "grid_fields_approved" and r.json()["detail"]["fields"] == [1]
-    a = put_grid(client, aid, grid=None, force=True).json()
+    # clearing the grid is never refused because of approvals (there is no approval step for grid fields)
+    a = put_grid(client, aid, grid=None).json()
     assert fields(a) == {} and a["slide"]["grid"] is None
 
 

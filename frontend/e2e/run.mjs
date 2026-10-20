@@ -275,19 +275,6 @@ async function regionSuite() {
   const ex = a2.regions.filter((r) => r.kind === 'exclusion').find((r) => r.polygon.length === 4 && r.name.startsWith('Exclusion'));
   check('polygon exclusion drawn with Enter to finish', !!ex, ex ? `${ex.name} ${JSON.stringify(ex.polygon)}` : 'none');
 
-  // approval refused with reasons
-  await tid('tab-regions').click();
-  await page.locator('[data-testid=approve-reg-1]').click();
-  await page.waitForSelector('[data-testid=region-error-reg-1]');
-  const msg = await tid('region-error-reg-1').innerText();
-  check('approval refusal reason shown', /inspected/.test(msg) || /uncertain/.test(msg), msg);
-  await setChecked('inspected-reg-1');
-  await page.waitForTimeout(250);
-  await page.locator('[data-testid=approve-reg-1]').click();
-  await page.waitForTimeout(250);
-  const msg2 = await tid('region-error-reg-1').innerText();
-  check('approval still refused while uncertain objects unresolved', /uncertain/.test(msg2), msg2);
-  await shot('region-approval-refused');
   // rename
   await page.locator('[data-testid=region-reg-1] .rname').dblclick();
   await tid('region-name-input').fill('Left lobe');
@@ -548,21 +535,17 @@ async function detectSuite() {
 
   // finalize flow
   await tid('tab-finish').click();
-  check('finalize disabled with blockers listed', (await tid('finalize').isDisabled()) && (await page.locator('[data-testid=checklist] li.bad').count()) >= 2);
+  check('finalize disabled with blockers listed', (await tid('finalize').isDisabled()) && (await page.locator('[data-testid=checklist] li.bad').count()) >= 1);
   await shot('finish-blocked');
-  // resolve: reclassify uncertain -> yellow; inspect + approve
+  // resolve: reclassify uncertain -> yellow; no inspection/approval step (accept all proposals only)
   const q = await toScreen(400, 80);
   await page.mouse.click(q.x, q.y);
   await page.keyboard.press('y');
   await page.waitForTimeout(250);
   await tid('tab-regions').click();
-  await setChecked('inspected-reg-1');
-  await page.waitForTimeout(250);
   await page.locator('[data-testid=accept-reg-1]').click();
   await page.waitForTimeout(250);
-  await page.locator('[data-testid=approve-reg-1]').click();
-  await page.waitForTimeout(300);
-  check('region approved badge', (await tid('region-status-reg-1').innerText()) === 'approved');
+  check('no approval controls in the region card', (await page.locator('[data-testid=approve-reg-1]').count()) === 0 && (await page.locator('[data-testid=inspected-reg-1]').count()) === 0);
   await tid('tab-finish').click();
   check('finalize enabled when no blockers', await tid('finalize').isEnabled());
   // export link has DRAFT label before final

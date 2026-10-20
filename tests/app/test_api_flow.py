@@ -154,7 +154,6 @@ def test_full_round_trip_with_restart_and_export(data_dir, tiff, detector):
         assert client2.post(f"/api/analyses/{aid}/undo").json()["code"] == "nothing_to_undo"
         r = act(client2, aid, "move", object_id="d1", x=31, y=31)
         assert r.status_code == 200 and not r.json()["regions"][0]["approved"]
-        assert client2.post(f"/api/analyses/{aid}/finalize").json()["code"] == "regions_not_approved"
         # undo history survives restart too
     with TestClient(create_app(data_dir)) as client3:
         a3 = client3.get(f"/api/analyses/{aid}").json()

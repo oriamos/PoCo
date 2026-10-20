@@ -140,17 +140,10 @@ function RegionCard({ region: r, selected, locked }: { region: Region; selected:
   const [name, setName] = useState(r.name);
   const [editing, setEditing] = useState(false);
   const live = liveObjects(a).filter((o) => o.region_id === r.id);
-  const unresolved = live.filter((o) => o.cls === 'uncertain').length;
   const unreviewed = live.filter((o) => !o.reviewed).length;
   const c = counts?.regions.find((x) => x.scope === r.id);
   const area = polygonArea(r.polygon);
   const isCounting = r.kind === 'counting';
-
-  const hints: string[] = [];
-  if (isCounting && !r.approved) {
-    if (!r.inspected) hints.push('not yet marked as inspected for omissions');
-    if (unresolved > 0) hints.push(`${unresolved} unresolved uncertain object${unresolved > 1 ? 's' : ''}`);
-  }
 
   const rename = () => {
     setEditing(false);
@@ -159,7 +152,7 @@ function RegionCard({ region: r, selected, locked }: { region: Region; selected:
     if (n !== r.name) void saveRegions(a.regions.map((x) => (x.id === r.id ? { ...x, name: n } : x)));
   };
   const remove = () => {
-    if (!confirm(`Delete ${r.kind} region "${r.name}"?${r.approved ? ' Its approval will be lost.' : ''}`)) return;
+    if (!confirm(`Delete ${r.kind} region "${r.name}"?`)) return;
     void saveRegions(a.regions.filter((x) => x.id !== r.id));
   };
 
@@ -196,7 +189,6 @@ function RegionCard({ region: r, selected, locked }: { region: Region; selected:
           </strong>
         )}
         <span className="chip">{r.kind}</span>
-        {isCounting && <StatusBadge region={r} />}
       </header>
       <div className="rmeta small muted mono">
         {Math.round(area).toLocaleString()} px² · {live.length} object{live.length === 1 ? '' : 's'}
@@ -205,42 +197,17 @@ function RegionCard({ region: r, selected, locked }: { region: Region; selected:
       </div>
       {isCounting && <FieldNumber region={r} locked={locked} />}
       {isCounting && (
-        <>
-          <label className="chk inspected">
-            <input
-              type="checkbox"
-              checked={r.inspected}
-              disabled={locked}
-              onChange={(e) => void act('region_inspected', { region_id: r.id, inspected: e.target.checked })}
-              data-testid={`inspected-${r.id}`}
-            />
-            I inspected this region for omissions
-          </label>
-          <div className="muted small">
-            Toggle “hide overlays” (H) and look for real spots that were not detected; add them manually before approving.
-          </div>
-          {hints.length > 0 && <div className="small warn-text">Approval will be refused: {hints.join('; ')}.</div>}
-          <div className="row wrap">
-            {r.approved ? (
-              <button className="btn sm" disabled={locked} onClick={() => void act('unapprove_region', { region_id: r.id })} data-testid={`unapprove-${r.id}`}>
-                Unapprove
-              </button>
-            ) : (
-              <button className="btn sm primary" disabled={locked} onClick={() => void act('approve_region', { region_id: r.id })} data-testid={`approve-${r.id}`}>
-                Approve region
-              </button>
-            )}
-            <button
-              className="btn sm"
-              disabled={locked || !r.inspected}
-              title={r.inspected ? 'Mark all non-deleted, non-uncertain objects in this region as reviewed' : 'Tick “I inspected this region” first'}
-              onClick={() => void act('accept_region', { region_id: r.id })}
-              data-testid={`accept-${r.id}`}
-            >
-              Accept all proposals
-            </button>
-          </div>
-        </>
+        <div className="row wrap">
+          <button
+            className="btn sm"
+            disabled={locked}
+            title="Mark all non-deleted, non-uncertain objects in this region as reviewed"
+            onClick={() => void act('accept_region', { region_id: r.id })}
+            data-testid={`accept-${r.id}`}
+          >
+            Accept all proposals
+          </button>
+        </div>
       )}
       {err && (
         <div className="notice err small" role="alert" data-testid={`region-error-${r.id}`}>

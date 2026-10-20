@@ -548,11 +548,6 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
                 if a.slide.grid is None:
                     return _respond(st)
                 own = {fi for fi, *_ in grid_mod.spec_cells(a.slide.grid)}
-                approved = sorted(r.field_index for r in fields if r.field_index in own and r.approved)
-                if approved and not body.force:
-                    return err(409, "grid_fields_approved",
-                               f"approved grid field(s) {', '.join(map(str, approved))}: unapprove them first "
-                               "(or pass force=true)", {"fields": approved})
                 engine.set_regions(st, [r for r in fields if r.field_index not in own] + others, {
                     "grid": None, "skipped_fields": [s_ for s_ in a.slide.skipped_fields if s_.field_index not in own]})
                 return _respond(st)
@@ -612,10 +607,11 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             classes = ss.parse_classes(c.classes)
             label = (c.label or "").strip() or ss.default_label(classes)
             sels.append((label, classes))
-        with store.view(aid_ok(aid)) as st:
+        with store.edit(aid_ok(aid)) as st:
             a = st.analysis
             out_dir = ss.resolve_output_dir(a, body.output_dir)
             ss.count_fields(a, ss.COUNTABLE)   # refuses early when no grid field is selected
+            engine.confirm_counting_regions(st)   # selected grid fields count as confirmed (no approval step)
             red, green = images.raw_pair(st)
             report = ss.save_slide(a, red, green, sels, out_dir, body.file_name)
         return report

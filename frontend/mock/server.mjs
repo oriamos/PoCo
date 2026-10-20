@@ -764,7 +764,6 @@ function applyAction(a, type, p) {
       case 'accept_region': {
         const r = a.regions.find((x) => x.id === p.region_id);
         if (!r) throw new HttpError(404, 'region_not_found', 'region not found');
-        if (!r.inspected) throw new HttpError(409, 'not_inspected', 'Region has not been marked as inspected for omissions.');
         live(a).filter((o) => o.region_id === r.id && o.cls !== 'uncertain').forEach((o) => (o.reviewed = true));
         break;
       }
@@ -1540,10 +1539,10 @@ async function handle(req, res) {
       const cr = a.regions.filter((r) => r.kind === 'counting');
       const bl = [];
       if (!cr.length) bl.push('no counting region');
-      if (cr.some((r) => !r.approved)) bl.push('not all counting regions approved');
       if (!a.image.channels.every((c) => c.role_confirmed)) bl.push('channel mapping not confirmed');
       if (a.provenance.stale_detection) bl.push('detection is stale');
       if (bl.length) throw new HttpError(409, 'finalize_blocked', `Cannot finalize: ${bl.join('; ')}.`, { blockers: bl });
+      cr.forEach((r) => Object.assign(r, { inspected: true, approved: true, approved_at: now(), approval_fingerprint: 'fp-' + store.seq++ }));   // no approval step: finalizing confirms the regions
       a.status = 'finalized';
       a.finalized_at = now();
       return send(res, 200, refresh(a));

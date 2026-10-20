@@ -21,19 +21,7 @@ export function FinishTab() {
     { ok: counting.length > 0, text: 'At least one counting region', fix: () => patch({ rightTab: 'regions' }), fixLabel: 'Regions' },
     { ok: !!a.provenance.detection_ran_at || a.objects.length > 0, text: 'Detection has been run', fix: () => patch({ rightTab: 'detect' }), fixLabel: 'Detect' },
     { ok: !a.provenance.stale_detection, text: 'Detection is up to date (not stale)', fix: () => patch({ rightTab: 'detect' }), fixLabel: 'Re-run' },
-    {
-      ok: counting.length > 0 && counting.every((r) => r.inspected),
-      text: `Every counting region inspected for omissions (${counting.filter((r) => r.inspected).length}/${counting.length})`,
-      fix: () => patch({ rightTab: 'regions' }),
-      fixLabel: 'Regions',
-    },
     { ok: unresolved === 0, text: unresolved ? `${unresolved} uncertain object(s) still unresolved` : 'No unresolved uncertain objects', fix: () => patch({ rightTab: 'review' }), fixLabel: 'Review' },
-    {
-      ok: counting.length > 0 && counting.every((r) => r.approved),
-      text: `Every counting region approved (${counting.filter((r) => r.approved).length}/${counting.length})`,
-      fix: () => patch({ rightTab: 'regions' }),
-      fixLabel: 'Regions',
-    },
   ];
   const blockers = items.filter((i) => !i.ok);
   const label = final ? 'FINAL' : 'DRAFT';

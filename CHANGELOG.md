@@ -13,6 +13,10 @@ from 0.1.0; while the major version is 0.x, minor releases may change behaviour 
 
 ### Changed
 
+* **No approval step.** Every counting region (selected grid field) counts as confirmed: the "I inspected this region" tick and the Approve / Unapprove
+  buttons are gone, and Finalize no longer asks for them. "Accept all proposals" works without the tick. Save and Finalize mark the regions inspected and
+  approved automatically, so exports and training data keep their flags. The grid can be cleared or re-applied at any time (it was refused while a field was
+  approved). The `approve_region` / `unapprove_region` / `region_inspected` actions still exist in the API.
 * **Save: one CSV row per colour, with a `Color` column.** Ticking red only, green only and yellow now gives a row for each (before, ticking several colours in one line
   merged them into one combined row). `<name>.csv` is now `SlideID, Color, Total number of polonies, Field1 ... Field24` with one row per colour, in one file
   (no more `<name>__<colour>.csv`). Combined rows (red + yellow, green + yellow together) are separate optional ticks. `experiment_counts.csv` keeps its columns

@@ -17,7 +17,7 @@ A **polony** is a small fluorescent spot made by amplifying a single DNA molecul
 2. **Map channels**: confirm which channel is red and which is green. File names only suggest a role.
 3. **Choose fields**: generate the counting grid, click the fields to count, or randomise the grid (the seed is recorded).
 4. **Detect**: Big-FISH (classical) and, optionally, Spotiflow (AI) propose spots in each field.
-5. **Review and export**: approve each counting field, then export `experiment_counts.csv`, Excel workbooks in the lab's layout, and a provenance file.
+5. **Review and export**: review the counts, then export `experiment_counts.csv`, Excel workbooks in the lab's layout, and a provenance file.
 
 ## Try PoCo in 5 minutes
 Needs Python 3.10–3.13, `make` and a clone of this repository. The demo uses the synthetic slide in the repository; no laboratory data.
@@ -68,7 +68,7 @@ On Windows, download `install.ps1` and `SHA256SUMS.txt` from the same release pa
 * **Big-FISH** is the classical detector: deterministic, with background subtraction and a threshold.
 * **Spotiflow** is the optional AI detector. A fresh AI install uses the **shipped fine-tuned model** `ft-7e4c89cb-8edc09e3` by default (downscale 4, normaliser `valid_unsaturated`, threshold 0.3, applied automatically). The pretrained `general` model stays in the model picker; models you train and promote replace the default. The run record names the model by registry id and weights checksum.
 * **Agreement between two detectors is not ground truth.** Where they agree the count is more likely right; where they differ, a person decides.
-* **Human review remains required.** Nothing is final until a person approves the counting fields. **Training never runs automatically.** It only happens when you run the training command yourself.
+* **Human review remains required.** Nothing is final until a person finalizes the analysis. **Training never runs automatically.** It only happens when you run the training command yourself.
 * **The fine-tuned weights are a [release asset](https://github.com/oriamos/poco/releases/tag/model-ft-7e4c89cb-8edc09e3)**, not part of the git repository; the installer downloads and verifies them. The laboratory approved distribution. The licence of the *upstream pretrained* Spotiflow weights is still unconfirmed ([MODEL_CARD.md](MODEL_CARD.md)). What is and is not connected: [docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md).
 
 Results so far ([docs/STATUS_AND_RESULTS.md](docs/STATUS_AND_RESULTS.md)): an **exploratory evaluation on eight real slides with one annotator** (varies a lot from slide to slide; not validation), and a **fine-tuning run on saved historical data** (the shipped model) (test split: 1,980 crops from 97 groups). Agreement with the saved researcher marks, at a 10-pixel tolerance, each model at its own threshold:

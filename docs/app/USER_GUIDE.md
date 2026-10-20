@@ -41,7 +41,7 @@ Regions tab, **Generate grid…**: rows, columns, cell size, origin, numbering o
 * **Apply** stores the grid with the analysis (survives a reload) and creates one counting region `Field-N` per cell. The tool switches to **Pick fields**: click a field to count it, click again to skip it (skipped = blank in the CSVs; counted with no polonies = 0). Counted fields: solid outline and number; skipped: dotted grey outline. Keys: **A** all, **N** none, **I** invert, **Esc** leaves the tool. A field fully inside an exclusion mask cannot be switched on.
 * **Randomise** keeps rows, columns and cell size and moves the whole grid to a random whole-pixel position inside the image. The seed is recorded (under *Grid fields* and in `provenance.json`) so the position can be reproduced. Ctrl+Z undoes it.
 * Applying again (or randomising) keeps each field's on/off choice by field number. A field that does not move keeps its approval; one that moves loses it, as with a hand edit. **Apply** always uses the origin in the form (no random shift).
-* **Remove grid** deletes the grid and its field regions; refused while a grid field is approved.
+* **Remove grid** deletes the grid and its field regions; always possible (grid fields have no approval step).
 
 Rectangle and polygon tools stay available for exclusions and for slides without a grid.
 
@@ -104,17 +104,16 @@ Edited automatic objects get `origin = edited`; added ones `origin = manual`.
 The detector can miss real spots and the queue cannot show what was not detected. For each counting region:
 
 1. Press **H** to hide overlays; look at raw/processed channels (views 1-5, zoom) for real spots without a marker. Add them with the Add tool.
-2. Tick **"I inspected this region for omissions"**.
-3. Optional **Accept all proposals**: marks all non-deleted, non-uncertain objects of the region reviewed (refused until the region is marked inspected). It is a bulk confirmation; use it deliberately.
-4. Resolve every `uncertain` object (reclassify or delete).
+2. Optional **Accept all proposals**: marks all non-deleted, non-uncertain objects of the region reviewed. It is a bulk confirmation; use it deliberately.
+3. Resolve every `uncertain` object (reclassify or delete).
 
 ## 9. Approval
 
-**Approve region** requires: region inspected, zero unresolved `uncertain`, detection not stale and detection having run (or objects existing). Approval is bound to a fingerprint of the region polygon, overlapping exclusions, the ids/positions/classes of its objects, the channel roles and the alignment. **Any later change inside the region (add, move, delete, reclassify, merge, split, re-detection, region/exclusion edit, mapping or alignment change) clears its approval.** Un-approve is always possible. Undo that restores an identical state restores a valid approval.
+There is no approval step for the researcher: **every counting region (selected grid field) counts as confirmed**. When you **Save** or **Finalize**, the app marks the counting regions as inspected and approved against their current content (this is what the exports and the training data read). Any later change inside a region (add, move, delete, reclassify, merge, split, re-detection, region/exclusion edit, mapping or alignment change) clears that mark until the next Save or Finalize.
 
 ## 10. Finalize and reopen
 
-**Finish** tab: a checklist. **Finalize analysis** is enabled only when at least one counting region exists, every counting region is approved, the channel mapping is confirmed and the detection is not stale. After finalizing, all mutating actions return an error (`analysis_finalized`) and exports are labelled FINAL. **Reopen** returns to review: approvals are kept but each is cleared by the first edit inside its region; undo history is not restored. Finalize and reopen are logged.
+**Finish** tab: a checklist. **Finalize analysis** is enabled only when at least one counting region exists, the channel mapping is confirmed and the detection is not stale. After finalizing, all mutating actions return an error (`analysis_finalized`) and exports are labelled FINAL. **Reopen** returns to review: approvals are kept but each is cleared by the first edit inside its region; undo history is not restored. Finalize and reopen are logged.
 
 ![Finalized](img/09-finalized.png)
 

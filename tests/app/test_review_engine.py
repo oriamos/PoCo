@@ -145,13 +145,10 @@ def test_review_queue_priority_and_ties():
 def test_accept_and_approve_gates():
     st = make_state([obj("a", 10, 10), obj("u", 30, 30, ObjectClass.uncertain)], [counting()])
     with pytest.raises(ReviewError) as e:
-        act(st, "accept_region", region_id="c1")
-    assert e.value.code == "region_not_inspected"
-    with pytest.raises(ReviewError) as e:
         act(st, "approve_region", region_id="c1")
     assert e.value.code == "region_not_inspected"
+    act(st, "accept_region", region_id="c1")      # no inspection tick needed any more
     act(st, "region_inspected", region_id="c1", inspected=True)
-    act(st, "accept_region", region_id="c1")
     assert st.analysis.objects[0].reviewed and not st.analysis.objects[1].reviewed  # uncertain not accepted
     with pytest.raises(ReviewError) as e:
         act(st, "approve_region", region_id="c1")
@@ -252,12 +249,9 @@ def test_unapprove_and_uninspect():
 
 def test_finalize_gates_freeze_and_reopen():
     st = make_state([obj("a", 10, 10)], [counting()])
-    with pytest.raises(ReviewError) as e:
-        engine.finalize(st)
-    assert e.value.code == "regions_not_approved"
-    inspect_and_approve(st)
-    engine.finalize(st)
+    engine.finalize(st)      # no approval step: finalizing confirms every counting region
     a = st.analysis
+    assert a.regions[0].approved and a.regions[0].inspected
     assert a.finalized_at and a.status.value == "finalized"
     for t, p in [("add", dict(x=1, y=1, cls="red")), ("delete", dict(object_ids=["a"])),
                  ("unapprove_region", dict(region_id="c1"))]:
@@ -274,8 +268,8 @@ def test_finalize_gates_freeze_and_reopen():
     assert a.regions[0].approved  # approvals kept ...
     act(st, "move", object_id="a", x=12, y=12)
     assert not a.regions[0].approved  # ... until an edit invalidates them
-    with pytest.raises(ReviewError):
-        engine.finalize(st)
+    engine.finalize(st)               # finalizing confirms the regions again
+    assert a.regions[0].approved and a.finalized_at
 
 
 def test_finalize_requires_mapping_nonstale_and_regions():
