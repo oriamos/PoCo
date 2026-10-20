@@ -96,11 +96,12 @@ def test_save_writes_labeled_scan_and_csvs_next_to_original(client, scan_dir, de
     assert img.ndim == 3 and img.shape[2] == 3 and img.dtype.name == "uint8"
     slide = rows(scan_dir / "AI_A.csv")
     assert slide[0] == ["SlideID", "Total number of polonies"] + [f"Field{i}" for i in range(1, 25)]
-    # field 1: 3 red-only, field 2: counted but zero, field 3: no region => blank, field 4: 5
-    assert slide[1][:6] == ["AI_A", "8", "3", "0", "", "5"] and set(slide[1][6:]) == {""}
+    # grid field 1: 3 red-only, field 2: counted but zero, field 3: switched off, field 4: 5
+    # => the CSV lists the counted fields one by one (Field1..Field3), no gap for the switched-off field
+    assert slide[1][:6] == ["AI_A", "8", "3", "0", "5", ""] and set(slide[1][5:]) == {""}
     exp = rows(scan_dir / "experiment_counts.csv")
     assert exp[0] == ["Slide name", "What counted", "NofPol", "NofGrids"] + [f"Field{i}" for i in range(1, 25)]
-    assert exp[1][:8] == ["AI_A", "red, not yellow", "8", "3", "3", "0", "", "5"]
+    assert exp[1][:8] == ["AI_A", "red, not yellow", "8", "3", "3", "0", "5", ""]
     assert rep["rows"][0]["nofgrids"] == 3
 
 
@@ -175,3 +176,12 @@ def test_grid_selection_off_on_roundtrip(client, scan_dir, detector):
     assert rows(scan_dir / "AI_A.csv")[1][:5] == ["AI_A", "5", "3", "2", ""]
     # unknown field -> 404
     assert client.put(f"/api/analyses/{aid}/grid-selection", json={"field_index": 9, "counted": True}).status_code == 404
+
+
+def test_csv_lists_counted_fields_one_by_one_whatever_their_grid_numbers():
+    counts = {3: 4, 7: 0, 30: 2}
+    assert ss._field_cells(counts)[:4] == [4, 0, 2, None] and len(ss._field_cells(counts)) == ss.N_FIELDS
+    assert ss.experiment_row("S", "yellow", counts)[:7] == ["S", "yellow", 6, 3, 4, 0, 2]
+    with pytest.raises(ss.ReviewError) as e:
+        ss._field_cells({i: 1 for i in range(1, ss.N_FIELDS + 2)})
+    assert e.value.code == "too_many_fields"

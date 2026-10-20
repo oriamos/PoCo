@@ -11,6 +11,14 @@ from 0.1.0; while the major version is 0.x, minor releases may change behaviour 
   PyTorch was not installed and the AI detector failed with `No module named 'torch'`. On Apple Silicon, `install.sh` now skips Intel Pythons (also in an
   existing environment) and downloads a native arm64 Python 3.12 with `uv` when none is found, so current PyTorch and the Apple GPU (MPS) are used.
 
+### Changed
+
+* **Save: "Choose folder and file name…" button** (desktop window): opens the system save window, where the researcher picks the folder and types the
+  file name (used for `<name>_labeled.tif` and `<name>.csv`; the "Slide name" in the CSVs stays the scan's name). In the browser the folder is still typed.
+* **CSV: counted grid fields are listed one by one.** `Field1, Field2, ...` are the counted fields in grid order, whatever their numbers in the grid are
+  (a switched-off field no longer leaves a blank column; grid numbers above 24 are fine as long as at most 24 fields are counted). The labelled scan keeps
+  the grid numbers.
+
 ### Added
 
 * **AI detector on real Intel Macs:** installs PyTorch 2.2.2 / torchvision 0.17.2 (the last releases published for Intel Macs) with `numpy<2`; CPU only, slower.

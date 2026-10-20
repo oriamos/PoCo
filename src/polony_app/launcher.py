@@ -448,6 +448,26 @@ class WindowApi:
         res = wv.windows[0].create_file_dialog(kind, allow_multiple=True, file_types=("TIFF images (*.tif;*.tiff)",))
         return [str(p) for p in (res or [])]
 
+    def pick_save(self, name: str = "", directory: str = "") -> dict:
+        """Native "save as" window: the researcher picks the folder and types the file name.
+        Returns {"folder", "name"} (name without extension) or {} when cancelled."""
+        wv = self._wv
+        if not wv.windows:
+            return {}
+        kind = getattr(getattr(wv, "FileDialog", None), "SAVE", None)
+        if kind is None:
+            kind = wv.SAVE_DIALOG
+        kw = {"save_filename": name}
+        if directory and Path(directory).is_dir():
+            kw["directory"] = directory
+        res = wv.windows[0].create_file_dialog(kind, **kw)
+        if isinstance(res, (list, tuple)):
+            res = res[0] if res else None
+        if not res:
+            return {}
+        p = Path(str(res))
+        return {"folder": str(p.parent), "name": p.stem if p.suffix.lower() in (".csv", ".tif", ".tiff") else p.name}
+
 
 def open_window(url: str, port: int, cfg: dict) -> bool:
     """Show the app in a native window until it is closed. False (reason logged) when no window could be made."""

@@ -124,7 +124,7 @@ The detector can miss real spots and the queue cannot show what was not detected
 2. Create the grid (section 3), run detection, review and approve.
 3. **Save tab**:
    * *What to count*: tick red only / green only / yellow (red + green). The CSV text is generated (`red, not yellow`, `yellow`, `red and yellow`, ...) and editable. **+ Count something else too** adds a row; each row becomes its own row in the experiment CSV.
-   * *Grid fields to count*: click a field to switch it off (bad area) or on. Off = blank in the CSV; counted with no polonies = 0. Numbers above 24 are not allowed (the lab template ends at Field24).
+   * *Grid fields to count*: click a field to switch it off (bad area) or on. Off = left out of the CSV; counted with no polonies = 0. The CSV lists the counted fields one by one (Field1, Field2, ...) in grid order, whatever their grid numbers are; at most 24 fields can be counted.
    * **Save** writes next to the original scan (`<name>` = file name without extension; the original is never modified):
      * `<name>_labeled.tif`: RGB scan with the grid, per-field counts and a ring around every counted object (orange red-only, cyan green-only, yellow yellow).
      * `<name>.csv`: `SlideID, Total number of polonies, Field1 ... Field24`. With several rows: `<name>__<what-counted>.csv`, one per row.

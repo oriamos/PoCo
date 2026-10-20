@@ -1,8 +1,9 @@
 """'Save' of a reviewed slide: labelled scan + per-slide CSV + shared experiment CSV, next to the original.
 
 Pure helpers (counting, labels, CSV text, experiment upsert) plus `render_labeled` and `save_slide`
-(file writing). Field semantics follow the lab layout: a grid cell with a field region and no polonies is 0,
-a cell without a region (switched off / never created) is blank.
+(file writing). Field semantics follow the lab layout: a counted grid field with no polonies is 0, a switched-off
+field is left out. The CSV lists the counted fields one by one (Field1, Field2, ...) in grid order, whatever
+their numbers in the grid are; the labelled scan keeps the grid numbers.
 """
 from __future__ import annotations
 
@@ -73,9 +74,9 @@ def field_regions(a: Analysis) -> dict[int, Region]:
     out: dict[int, Region] = {}
     for r in a.regions:
         if r.kind == RegionKind.counting and r.field_index is not None:
-            if not 1 <= r.field_index <= N_FIELDS:
+            if r.field_index < 1:
                 raise ReviewError("field_out_of_range", f"region '{r.name}' has field number {r.field_index}; "
-                                  f"the CSV has fields 1..{N_FIELDS}", 422)
+                                  "grid field numbers start at 1", 422)
             if r.field_index in out:
                 raise ReviewError("duplicate_field", f"field {r.field_index} is defined twice "
                                   f"('{out[r.field_index].name}', '{r.name}')", 422)
@@ -112,7 +113,12 @@ def _csv(header: list[str], rows: list[list]) -> str:
 
 
 def _field_cells(counts: dict[int, int]) -> list[Optional[int]]:
-    return [counts.get(i) for i in range(1, N_FIELDS + 1)]
+    """The counted fields one by one in grid order (Field1 = the first counted field, ...), blank-padded to N_FIELDS."""
+    if len(counts) > N_FIELDS:
+        raise ReviewError("too_many_fields", f"{len(counts)} grid fields are counted; the CSV has room for {N_FIELDS}. "
+                          "Switch some fields off in the grid map.", 422)
+    cells: list[Optional[int]] = [counts[f] for f in sorted(counts)]
+    return cells + [None] * (N_FIELDS - len(cells))
 
 
 def slide_csv(slide_id: str, counts: dict[int, int]) -> str:
@@ -230,8 +236,9 @@ def resolve_output_dir(a: Analysis, output_dir: Optional[str]) -> Path:
 
 
 def save_slide(a: Analysis, red: np.ndarray, green: np.ndarray, selections: list[tuple[str, tuple[ObjectClass, ...]]],
-               out_dir: Path) -> dict:
-    """Write <stem>_labeled.tif, one per-slide CSV per selection and upsert experiment_counts.csv. Returns a report."""
+               out_dir: Path, file_name: Optional[str] = None) -> dict:
+    """Write <name>_labeled.tif, one per-slide CSV per selection and upsert experiment_counts.csv. Returns a report.
+    <name> is `file_name` when given (the researcher typed it in the save dialog), else the scan's stem."""
     if not selections:
         raise ReviewError("invalid_selection", "choose at least one thing to count", 422)
     labels = [s[0] for s in selections]
@@ -239,7 +246,7 @@ def save_slide(a: Analysis, red: np.ndarray, green: np.ndarray, selections: list
         raise ReviewError("invalid_selection", "'what counted' labels must be different from each other", 422)
     src = a.image.source_path if a.image else None
     stem = slide_name(a)
-    fname = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', "_", stem).strip(" .") or "slide"
+    fname = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', "_", (file_name or "").strip() or stem).strip(" .") or "slide"
     slide_id = stem
     per_sel = [(lab, cls, count_fields(a, cls)) for lab, cls in selections]
     union = {c for _, cls in selections for c in cls}
@@ -261,9 +268,6 @@ def save_slide(a: Analysis, red: np.ndarray, green: np.ndarray, selections: list
     warnings = []
     if unc:
         warnings.append(f"{unc} uncertain object(s) are not counted in any column.")
-    unapproved = [r.name for r in field_regions(a).values() if not r.approved]
-    if unapproved:
-        warnings.append(f"{len(unapproved)} counted field(s) are not marked approved.")
     return {"directory": str(out_dir), "files": files, "slide_id": slide_id, "warnings": warnings,
             "rows": [{"what_counted": lab, "nofpol": sum(c.values()), "nofgrids": len(c),
                       "fields": {str(k): v for k, v in sorted(c.items())}} for lab, _cls, c in per_sel]}

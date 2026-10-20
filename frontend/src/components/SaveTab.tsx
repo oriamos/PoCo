@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { nativeSaveAvailable, pickNativeSave } from '../lib/nativePicker';
 import { api, ApiError } from '../api/client';
 import type { CountClass, SaveSlideReport } from '../api/types';
 import { COUNT_CLASSES, defaultLabel, dirOf, gridFields, selectionProblems } from '../lib/saveslide';
@@ -13,6 +14,7 @@ export function SaveTab() {
   const patch = useApp((s) => s.patch);
   const toast = useApp((s) => s.toast);
   const [outDir, setOutDir] = useState('');
+  const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<SaveSlideReport | null>(null);
   const [error, setError] = useState('');
@@ -21,6 +23,15 @@ export function SaveTab() {
   const fields = useMemo(() => gridFields(a), [a]);
   const counted = fields.filter((f) => f.counted).length;
   const needDir = !src && !outDir.trim();
+  const native = nativeSaveAvailable();
+  const defaultName = src ? (src.split(/[\\/]/).pop() ?? '').replace(/\.[^.]+$/, '') : a.name;
+  const choose = async () => {
+    const p = await pickNativeSave(fileName || defaultName, outDir || (src ? dirOf(src) : ''));
+    if (p) {
+      setOutDir(p.folder);
+      setFileName(p.name);
+    }
+  };
 
   const setRow = (i: number, p: Partial<(typeof sel)[number]>) => patch({ saveSel: sel.map((r, k) => (k === i ? { ...r, ...p } : r)) });
   const toggleClass = (i: number, c: CountClass) => {
@@ -33,7 +44,7 @@ export function SaveTab() {
     setError('');
     setReport(null);
     try {
-      const r = await api.saveSlide(a.id, sel, src ? undefined : outDir.trim());
+      const r = await api.saveSlide(a.id, sel, outDir.trim() || undefined, fileName.trim() || undefined);
       setReport(r);
       toast('success', `Saved ${r.files.length} files to ${r.directory}`);
     } catch (e) {
@@ -103,15 +114,33 @@ export function SaveTab() {
 
       <section>
         <h4>3. Where</h4>
-        {src ? (
+        {src && !outDir ? (
           <div className="small" data-testid="save-where">
             Next to the original: <span className="mono">{dirOf(src)}</span>
           </div>
+        ) : outDir && native ? (
+          <div className="small" data-testid="save-where">
+            Folder: <span className="mono">{outDir}</span>
+          </div>
+        ) : null}
+        {native ? (
+          <div className="row wrap">
+            <button className="btn sm" onClick={() => void choose()} data-testid="save-choose">
+              {outDir || src ? 'Choose another folder and name…' : 'Choose folder and file name…'}
+            </button>
+            {fileName && (
+              <span className="small">
+                File name: <span className="mono">{fileName}</span>
+              </span>
+            )}
+          </div>
         ) : (
-          <label className="small">
-            This scan was uploaded, so its folder is unknown. Folder to save in:
-            <input className="input sm" value={outDir} onChange={(e) => setOutDir(e.target.value)} placeholder="/path/to/folder" data-testid="save-outdir" />
-          </label>
+          !src && (
+            <label className="small">
+              This scan was uploaded, so its folder is unknown. Folder to save in:
+              <input className="input sm" value={outDir} onChange={(e) => setOutDir(e.target.value)} placeholder="/path/to/folder" data-testid="save-outdir" />
+            </label>
+          )
         )}
       </section>
 

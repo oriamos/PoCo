@@ -88,6 +88,7 @@ class CountSelectionBody(BaseModel):
 class SaveSlideBody(BaseModel):
     selections: list[CountSelectionBody]
     output_dir: Optional[str] = None
+    file_name: Optional[str] = None    # base name of the files; default: the scan's name
 
 
 class ChannelMap(BaseModel):
@@ -616,7 +617,7 @@ def create_app(data_dir: str | Path | None = None, settings=None) -> FastAPI:
             out_dir = ss.resolve_output_dir(a, body.output_dir)
             ss.count_fields(a, ss.COUNTABLE)   # refuses early when no grid field is selected
             red, green = images.raw_pair(st)
-            report = ss.save_slide(a, red, green, sels, out_dir)
+            report = ss.save_slide(a, red, green, sels, out_dir, body.file_name)
         return report
 
     @api.get("/analyses")
