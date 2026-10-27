@@ -3,7 +3,7 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
-## Unreleased
+## 0.3.5 — ImageJ-native result files (2026-10-27)
 
 ### Added
 

@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "PoCo / Polony Review"
-version: 0.3.4
-date-released: 2026-10-19
+version: 0.3.5
+date-released: 2026-10-27
 repository-code: "https://github.com/oriamos/poco"
 license: MIT
 authors:
