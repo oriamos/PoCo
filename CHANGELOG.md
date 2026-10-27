@@ -3,6 +3,13 @@
 All notable changes to PoCo / Polony Review are recorded here. The project follows [Semantic Versioning](https://semver.org/)
 from 0.1.0; while the major version is 0.x, minor releases may change behaviour and file formats, and the release notes say so.
 
+## Unreleased
+
+### Added
+
+* **Save writes an ImageJ-native copy of the result**: `<name>_imagej.tif` (raw 2-channel TIFF with the counted objects, grid and per-field counts as an overlay) and
+  `<name>_rois.zip` (the same ROIs as an ImageJ RoiSet), so a reader without PoCo can open the file in ImageJ/Fiji and see what was counted. `<name>_labeled.tif` is kept.
+
 ## 0.3.4 — training data saved with every Save (2026-10-20)
 
 ### Added

@@ -94,10 +94,22 @@ def test_save_writes_labeled_scan_and_csvs_next_to_original(client, scan_dir, de
     assert r.status_code == 200, r.text
     rep = r.json()
     assert rep["directory"] == str(scan_dir.resolve()) and rep["slide_id"] == "AI_A"
-    assert sorted(p.name for p in scan_dir.iterdir()) == ["AI_A.csv", "AI_A.tif", "AI_A_labeled.tif", "experiment_counts.csv"]
+    assert sorted(p.name for p in scan_dir.iterdir()) == ["AI_A.csv", "AI_A.tif", "AI_A_imagej.tif", "AI_A_labeled.tif", "AI_A_rois.zip", "experiment_counts.csv"]
     assert (scan_dir / "AI_A.tif").read_bytes() == original            # original untouched
     img = tifffile.imread(scan_dir / "AI_A_labeled.tif")
     assert img.ndim == 3 and img.shape[2] == 3 and img.dtype.name == "uint8"
+    # ImageJ-native copy: raw 2-channel planes + overlay with exactly the 8 counted red objects, and the same ROIs as a RoiSet
+    import zipfile
+
+    import roifile
+    with tifffile.TiffFile(scan_dir / "AI_A_imagej.tif") as t:
+        assert t.is_imagej and t.series[0].axes == "CYX" and t.series[0].shape[0] == 2
+        ov = [roifile.ImagejRoi.frombytes(b) for b in t.imagej_metadata["Overlays"]]
+    assert sum(r.name.startswith("red F") for r in ov) == 8 and not any(r.name.startswith(("green", "yellow")) for r in ov)
+    assert {r.name for r in ov if r.name.startswith("field ")} == {"field 1", "field 2", "field 4"}
+    assert [r.text for r in ov if r.name == "count field 1"] == ["1: 3"]
+    with zipfile.ZipFile(scan_dir / "AI_A_rois.zip") as z:
+        assert len(z.namelist()) == len(ov)
     slide = rows(scan_dir / "AI_A.csv")
     assert slide[0] == ["SlideID", "Color", "Total number of polonies"] + [f"Field{i}" for i in range(1, 25)]
     # grid field 1: 3 red-only, field 2: counted but zero, field 3: switched off, field 4: 5
