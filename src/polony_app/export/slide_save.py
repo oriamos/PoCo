@@ -229,6 +229,10 @@ def _write_tiff(path: Path, arr: np.ndarray) -> None:
 
 
 # ------------------------------------------------------------------ save
+def src_resolved_in(paths: Iterable[Path], src: str) -> bool:
+    return any(p.resolve() == Path(src).resolve() for p in paths)
+
+
 def resolve_output_dir(a: Analysis, output_dir: Optional[str]) -> Path:
     src = a.image.source_path if a.image else None
     chosen = output_dir or (str(Path(src).parent) if src else None)
@@ -265,6 +269,16 @@ def save_slide(a: Analysis, red: np.ndarray, green: np.ndarray, selections: list
         raise ReviewError("would_overwrite_original", "refusing to overwrite the original scan", 409)
     _write_tiff(labeled, img)
     files = [labeled.name]
+    # ImageJ-native copy for readers without PoCo: raw 2-channel TIFF with the counted objects as an overlay + RoiSet
+    from polony_app.export import imagej
+
+    rois = imagej.build_rois(a, union, per_sel[0][2], field_regions(a))
+    ij_tif, ij_zip = out_dir / f"{fname}_imagej.tif", out_dir / f"{fname}_rois.zip"
+    if src and src_resolved_in((ij_tif, ij_zip), src):
+        raise ReviewError("would_overwrite_original", "refusing to overwrite the original scan", 409)
+    imagej.write_imagej(ij_tif, red, green, rois)
+    imagej.write_roiset(ij_zip, rois)
+    files += [ij_tif.name, ij_zip.name]
     p = out_dir / f"{fname}.csv"      # one file, one row per colour counted
     _atomic_write(p, slide_csv(slide_id, [(color_text(lab, cls), counts) for lab, cls, counts in per_sel]).encode("utf-8-sig"))
     files.append(p.name)
