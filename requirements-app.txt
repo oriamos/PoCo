@@ -1,6 +1,6 @@
 # Dependencies of the polony counting app (src/polony_app). Python >= 3.10.
 # Legacy `polony` package dependencies (torch, wandb, ...) are NOT needed.
-fastapi>=0.110
+fastapi>=0.162.0
 uvicorn>=0.29
 python-multipart>=0.0.9
 pydantic>=2.5
